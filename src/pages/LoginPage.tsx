@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Banknote, Moon, Accessibility, UserSquare } from 'lucide-react';
 
 const LoginHeader: React.FC = () => (
@@ -39,6 +40,7 @@ const CnhLogo: React.FC = () => (
 const LoginPage: React.FC = () => {
   const [cpf, setCpf] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const navigate = useNavigate();
 
   const handleCpfChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
@@ -48,7 +50,6 @@ const LoginPage: React.FC = () => {
       .replace(/(\d{3})(\d)/, '$1.$2') // Adiciona ponto após o 6º dígito
       .replace(/(\d{3})(\d{1,2})$/, '$1-$2'); // Adiciona traço antes dos últimos 2 dígitos
     
-    // Limita o tamanho ao máximo de um CPF formatado
     setCpf(formattedCpf.substring(0, 14));
   };
 
@@ -73,7 +74,7 @@ const LoginPage: React.FC = () => {
       const data = await response.json();
 
       if (response.ok && data.success) {
-        alert(`CPF Válido! Nome: ${data.data.name}`);
+        navigate('/confirmation', { state: { name: data.data.name } });
       } else {
         alert(`Erro ao consultar o CPF: ${data.message || 'CPF inválido ou não encontrado.'}`);
       }
