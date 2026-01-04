@@ -171,9 +171,9 @@ const Footer: React.FC = () => {
         <div className="flex flex-col md:flex-row justify-between gap-8 border-b border-blue-800 pb-10 mb-10">
           <div className="flex-1">
             <img 
-              src="https://www.gov.br/governodigital/pt-br/identidade-visual-do-governo-federal/marca-govbr/marca-gov-br/govbr-branco.png" 
+              src="/Gov.br_logo.svg.png" 
               alt="gov.br" 
-              className="h-8 mb-6"
+              className="h-10 mb-6 bg-white p-1 rounded"
             />
             <div className="grid grid-cols-2 gap-4 text-sm font-medium">
               <a href="#" className="hover:underline">Assuntos</a>
