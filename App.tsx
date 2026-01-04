@@ -362,6 +362,14 @@ const App: React.FC = () => {
             </ul>
           </div>
 
+          {/* Last Vacancies Card */}
+          <div className="bg-gray-100 p-6 rounded-lg">
+            <h3 className="text-xl font-bold text-gray-800 mb-4">Últimas Vagas para 2026</h3>
+            <p className="text-gray-700 leading-relaxed">
+              Devido à alta demanda, restam poucas vagas para obter a CNH gratuitamente e sem autoescola. Estas são as últimas vagas disponíveis para <strong>janeiro de 2026</strong>. Caso não realize a inscrição com urgência, a próxima oportunidade será somente entre 2026 e 2027. Quem não se cadastrar arcará com os custos integrais do processo de habilitação.
+            </p>
+          </div>
+
           {/* Section 2 */}
           <div>
             <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-2">
