@@ -416,9 +416,9 @@ const App: React.FC = () => {
       <div className="fixed right-4 top-1/2 -translate-y-1/2 z-30">
         <div className="w-12 h-12 bg-[#004381] rounded-full flex items-center justify-center shadow-lg border-2 border-white cursor-pointer hover:scale-105 transition-transform">
           <img 
-            src="/Screenshot_2.png" 
-            alt="Logo BA.GOV.BR" 
-            className="w-12 h-12 rounded-full object-cover"
+            src="https://vlibras.gov.br/assets/images/widget/icon.png" 
+            alt="V Libras" 
+            className="w-8 h-8"
           />
         </div>
       </div>
