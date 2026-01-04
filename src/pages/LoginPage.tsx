@@ -18,7 +18,7 @@ const LoginHeader: React.FC = () => (
 );
 
 const CnhLogo: React.FC = () => (
-    <div className="flex items-center justify-center my-8">
+    <div className="flex items-center justify-center mb-6">
         <div className="inline-block">
             <div className="flex items-end">
                 <span className="text-6xl font-extrabold text-[#0033a0]">CNH</span>
@@ -89,8 +89,8 @@ const LoginPage: React.FC = () => {
     <div className="bg-gray-50 min-h-screen">
       <LoginHeader />
       <main className="max-w-sm mx-auto px-4 py-8">
-        <CnhLogo />
         <div className="bg-white p-6 rounded-lg shadow">
+          <CnhLogo />
           <h1 className="text-xl font-bold text-gray-800 mb-4">Identifique-se no gov.br com:</h1>
           
           <div className="flex items-start gap-3 mb-6">
