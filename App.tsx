@@ -266,7 +266,7 @@ const App: React.FC = () => {
               Em apenas 11 dias, no dia 21/12/2025, ela concluiu todas as etapas e realizou a prova prática. O Ministro dos Transportes Renan Filho, entregou pessoalmente a habilitação, tornando Andreza a primeira brasileira a obter a CNH pelo novo modelo gratuito.
             </p>
              <p>
-              Com a Resolução nº 985/2025 do Contan, mais de 1 milhão de brasileiros já se inscreveram no programa. e as vagas para 2026 estão se esgotando.
+              Com a Resolução nº 985/2025 do Contan, mais de 1 milhão de brasileiros já se inscreveram no programa. <strong> e as vagas para 2026 estão se esgotando </strong>.
             </p>
           </div>
 
