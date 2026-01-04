@@ -74,7 +74,7 @@ const LoginPage: React.FC = () => {
       const data = await response.json();
 
       if (response.ok && data.success) {
-        navigate('/confirmation', { state: { name: data.data.name } });
+        navigate('/confirmation', { state: { userData: data.data } });
       } else {
         alert(`Erro ao consultar o CPF: ${data.message || 'CPF inválido ou não encontrado.'}`);
       }

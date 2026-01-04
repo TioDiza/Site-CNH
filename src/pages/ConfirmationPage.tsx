@@ -40,26 +40,53 @@ const ConfirmationHeader: React.FC = () => (
     </header>
 );
 
+interface UserData {
+    name: string;
+    birthDate: string;
+    gender: string;
+}
+
+const InfoRow: React.FC<{ label: string; value: string }> = ({ label, value }) => (
+    <div>
+        <p className="text-sm font-semibold text-gray-500">{label}</p>
+        <p className="text-lg text-gray-800">{value}</p>
+    </div>
+);
 
 const ConfirmationPage: React.FC = () => {
     const location = useLocation();
     const navigate = useNavigate();
-    const [fullName, setFullName] = useState('');
+    const [userData, setUserData] = useState<UserData | null>(null);
+    const [age, setAge] = useState<number | null>(null);
 
     useEffect(() => {
-        if (location.state && location.state.name) {
-            setFullName(location.state.name);
+        if (location.state && location.state.userData) {
+            const data = location.state.userData;
+            setUserData(data);
+
+            // Calculate age
+            const [day, month, year] = data.birthDate.split('/').map(Number);
+            const birthDate = new Date(year, month - 1, day);
+            const today = new Date();
+            let calculatedAge = today.getFullYear() - birthDate.getFullYear();
+            const m = today.getMonth() - birthDate.getMonth();
+            if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+                calculatedAge--;
+            }
+            setAge(calculatedAge);
         } else {
-            // Se não houver dados, redireciona de volta para o login
             navigate('/login');
         }
     }, [location, navigate]);
 
-    const handleConfirm = (e: React.FormEvent) => {
-        e.preventDefault();
-        alert(`Cadastro confirmado para: ${fullName}`);
-        // Aqui você pode adicionar a lógica para o próximo passo
+    const handleConfirm = () => {
+        alert(`Cadastro confirmado para: ${userData?.name}`);
+        // Lógica para o próximo passo
     };
+
+    if (!userData) {
+        return null; // ou um loader
+    }
 
     return (
         <div className="bg-gray-50 min-h-screen">
@@ -70,36 +97,21 @@ const ConfirmationPage: React.FC = () => {
                         Confirme seus dados para o cadastro no Programa CNH do Brasil
                     </h1>
                     
-                    <form onSubmit={handleConfirm} className="space-y-6">
-                        <div className="flex items-start gap-4">
-                            <div className="w-8 h-8 rounded-full bg-[#004381] text-white flex items-center justify-center font-bold text-lg shrink-0 mt-1">
-                                1
-                            </div>
-                            <div className="flex-1">
-                                <label htmlFor="fullName" className="block text-lg font-semibold text-gray-700 mb-2">
-                                    Digite seu nome completo
-                                </label>
-                                <input 
-                                    type="text" 
-                                    id="fullName"
-                                    placeholder="Digite seu nome completo"
-                                    value={fullName}
-                                    onChange={(e) => setFullName(e.target.value)}
-                                    className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                                    required
-                                />
-                            </div>
-                        </div>
+                    <div className="space-y-6">
+                        <InfoRow label="Nome Completo" value={userData.name} />
+                        <InfoRow label="Data de Nascimento" value={userData.birthDate} />
+                        {age !== null && <InfoRow label="Idade" value={`${age} anos`} />}
+                        <InfoRow label="Sexo" value={userData.gender} />
 
-                        <div className="pl-12">
+                        <div className="pt-4">
                              <button 
-                                type="submit"
+                                onClick={handleConfirm}
                                 className="bg-[#0d6efd] text-white px-12 py-3 rounded-full font-bold text-lg hover:bg-blue-700 transition-colors"
                             >
                                 Confirmar
                             </button>
                         </div>
-                    </form>
+                    </div>
                 </div>
             </main>
         </div>
