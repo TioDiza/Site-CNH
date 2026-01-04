@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Shield, Banknote, Moon, Accessibility } from 'lucide-react';
 
 const LoginHeader: React.FC = () => (
@@ -37,11 +37,40 @@ const CnhLogo: React.FC = () => (
 );
 
 const LoginPage: React.FC = () => {
-  const handleSubmit = (e: React.FormEvent) => {
+  const [cpf, setCpf] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Em um app real, aqui iria a lógica de login.
-    // Por enquanto, apenas previne o envio do formulário.
-    alert("Funcionalidade de login simulada.");
+    if (!cpf) {
+      alert("Por favor, digite um CPF.");
+      return;
+    }
+    setIsLoading(true);
+
+    const apiKey = 'b77f7a8b39207b2199969684bdad61d2f93113323a6c4d796e9bd8e256c55df6';
+    const url = `https://api.cpfhub.io/cpf/${cpf.replace(/\D/g, '')}`;
+
+    try {
+      const response = await fetch(url, {
+        headers: {
+          'x-api-key': apiKey
+        }
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        alert(`CPF Válido! Nome: ${data.data.name}`);
+      } else {
+        alert(`Erro ao consultar o CPF: ${data.message || 'CPF inválido ou não encontrado.'}`);
+      }
+    } catch (error) {
+      console.error("Erro na requisição:", error);
+      alert("Ocorreu um erro ao tentar validar o CPF. Tente novamente mais tarde.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -65,14 +94,18 @@ const LoginPage: React.FC = () => {
                 type="text" 
                 id="cpf"
                 placeholder="Digite seu CPF"
+                value={cpf}
+                onChange={(e) => setCpf(e.target.value)}
                 className="w-full p-3 border border-gray-400 rounded focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                disabled={isLoading}
               />
             </div>
             <button 
               type="submit"
-              className="w-full bg-[#0d6efd] text-white py-3 rounded-lg font-bold text-lg hover:bg-blue-700 transition-colors"
+              className="w-full bg-[#0d6efd] text-white py-3 rounded-lg font-bold text-lg hover:bg-blue-700 transition-colors disabled:bg-gray-400"
+              disabled={isLoading}
             >
-              Continuar
+              {isLoading ? 'Verificando...' : 'Continuar'}
             </button>
           </form>
 
