@@ -114,6 +114,7 @@ const LoginPage: React.FC = () => {
                 value={cpf}
                 onChange={handleCpfChange}
                 className="w-full p-3 border border-gray-400 rounded-lg focus:bg-yellow-100 focus:border-yellow-500 focus:ring-1 focus:ring-yellow-500 focus:outline-none text-lg tracking-wider"
+                style={{ fontFamily: "'Roboto Mono', monospace" }}
                 disabled={isLoading}
                 maxLength={14}
               />
