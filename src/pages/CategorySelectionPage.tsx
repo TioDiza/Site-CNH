@@ -387,7 +387,23 @@ const CategorySelectionPage: React.FC = () => {
         }, 2000);
     };
 
-    const handleFinalProsseguir = () => {
+    const handleShowTaxMessage = () => {
+        if (conversationStep !== 5) return;
+        addMessage('user', "Prosseguir");
+        setConversationStep(6);
+        setIsBotTyping(true);
+        setTimeout(() => {
+            addMessage('bot', (
+                <>
+                    <p className="mb-2">Prezado(a) {firstName}, seu cadastro encontra-se com status PENDENTE. Para liberação do acesso ao aplicativo de aulas e prosseguimento do processo, é obrigatório o recolhimento das Taxas Administrativas junto ao DETRAN.</p>
+                    <p>O valor das taxas será calculado e apresentado na guia de pagamento.</p>
+                </>
+            ));
+            setIsBotTyping(false);
+        }, 1500);
+    };
+
+    const handleNavigateToThankYou = () => {
         if (!userData) return;
         navigate('/thank-you', { state: { userData } });
     };
@@ -420,7 +436,13 @@ const CategorySelectionPage: React.FC = () => {
             case 5:
                 return (
                     <div className="mt-4 animate-fade-in">
-                        <button onClick={handleFinalProsseguir} className="w-full bg-[#004381] text-white px-8 py-3 rounded-lg font-bold text-lg hover:bg-blue-900 transition-all shadow-md active:scale-95 text-center">Prosseguir</button>
+                        <button onClick={handleShowTaxMessage} className="w-full bg-[#004381] text-white px-8 py-3 rounded-lg font-bold text-lg hover:bg-blue-900 transition-all shadow-md active:scale-95 text-center">Prosseguir</button>
+                    </div>
+                );
+            case 6:
+                 return (
+                    <div className="mt-4 animate-fade-in">
+                        <button onClick={handleNavigateToThankYou} className="w-full bg-[#004381] text-white px-8 py-3 rounded-lg font-bold text-lg hover:bg-blue-900 transition-all shadow-md active:scale-95 text-center">Prosseguir</button>
                     </div>
                 );
             default:
