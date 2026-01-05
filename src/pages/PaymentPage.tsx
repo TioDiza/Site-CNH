@@ -172,7 +172,7 @@ const PaymentPage: React.FC = () => {
                             </div>
 
                             <img 
-                                src={`data:image/png;base64,${paymentData.qrCode}`} 
+                                src={paymentData.qrCode} 
                                 alt="QR Code para pagamento PIX"
                                 className="w-64 h-64 rounded-lg border-4 border-gray-200 my-4"
                             />
