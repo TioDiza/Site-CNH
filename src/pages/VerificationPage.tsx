@@ -60,6 +60,12 @@ const SuccessDisplay: React.FC<{ userData: UserData }> = ({ userData }) => {
         { state: 'Acre', vagas: 91 }, { state: 'Alagoas', vagas: 87 }, { state: 'Amapá', vagas: 45 },
         { state: 'Amazonas', vagas: 112 }, { state: 'Bahia', vagas: 230 }, { state: 'Ceará', vagas: 180 },
         { state: 'Distrito Federal', vagas: 155 }, { state: 'Espírito Santo', vagas: 99 }, { state: 'Goiás', vagas: 176 },
+        { state: 'Maranhão', vagas: 140 }, { state: 'Mato Grosso', vagas: 125 }, { state: 'Mato Grosso do Sul', vagas: 110 },
+        { state: 'Minas Gerais', vagas: 350 }, { state: 'Pará', vagas: 190 }, { state: 'Paraíba', vagas: 105 },
+        { state: 'Paraná', vagas: 280 }, { state: 'Pernambuco', vagas: 210 }, { state: 'Piauí', vagas: 95 },
+        { state: 'Rio de Janeiro', vagas: 320 }, { state: 'Rio Grande do Norte', vagas: 85 }, { state: 'Rio Grande do Sul', vagas: 290 },
+        { state: 'Rondônia', vagas: 70 }, { state: 'Roraima', vagas: 35 }, { state: 'Santa Catarina', vagas: 250 },
+        { state: 'São Paulo', vagas: 550 }, { state: 'Sergipe', vagas: 60 }, { state: 'Tocantins', vagas: 55 }
     ];
 
     return (
