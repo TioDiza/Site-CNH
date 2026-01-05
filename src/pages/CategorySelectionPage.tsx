@@ -108,6 +108,7 @@ const CategorySelectionPage: React.FC = () => {
     const navigate = useNavigate();
     const location = useLocation();
     const userData = location.state?.userData as UserData | undefined;
+    const selectedState = location.state?.selectedState as string | undefined;
     const firstName = userData?.name.split(' ')[0];
 
     const [messages, setMessages] = useState<Message[]>([]);
@@ -173,7 +174,7 @@ const CategorySelectionPage: React.FC = () => {
             setIsBotTyping(false);
             addMessage('bot', (
                 <p>
-                    O Programa CNH do Brasil segue as seguintes etapas: o candidato realiza as aulas teóricas através do aplicativo oficial e, após a conclusão, o Detran Acre disponibilizará um instrutor credenciado, sem custo adicional, para a realização das aulas práticas obrigatórias.
+                    O Programa CNH do Brasil segue as seguintes etapas: o candidato realiza as aulas teóricas através do aplicativo oficial e, após a conclusão, o Detran {selectedState || ''} disponibilizará um instrutor credenciado, sem custo adicional, para a realização das aulas práticas obrigatórias.
                 </p>
             ));
         }, 1500);
@@ -199,7 +200,7 @@ const CategorySelectionPage: React.FC = () => {
         setConversationStep(4);
         
         setTimeout(() => {
-            navigate('/thank-you', { state: { userData } });
+            navigate('/thank-you', { state: { userData, selectedState } });
         }, 1000);
     };
 
