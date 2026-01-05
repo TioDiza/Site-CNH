@@ -94,6 +94,16 @@ const CategoryOption: React.FC<{ category: string; description: string; onClick:
     </button>
 );
 
+const MonthOption: React.FC<{ month: string; vagas: number; onClick: () => void }> = ({ month, vagas, onClick }) => (
+    <button
+        onClick={onClick}
+        className="w-full text-center p-3 border border-gray-200 bg-white rounded-lg hover:bg-gray-50 transition-colors shadow-sm"
+    >
+        <p className="font-semibold text-gray-700">{month}</p>
+        <p className="text-sm text-blue-600 font-bold">{vagas} vagas</p>
+    </button>
+);
+
 const CategorySelectionPage: React.FC = () => {
     const navigate = useNavigate();
     const location = useLocation();
@@ -109,6 +119,14 @@ const CategorySelectionPage: React.FC = () => {
         { category: "A", description: "Categoria A - Motocicletas" },
         { category: "B", description: "Categoria B - Carros" },
         { category: "AB", description: "Categoria AB - Motocicletas e Carros" },
+    ];
+
+    const monthOptions = [
+        { month: 'JANEIRO/2026', vagas: 9 }, { month: 'FEVEREIRO/2026', vagas: 6 },
+        { month: 'MARÇO/2026', vagas: 10 }, { month: 'ABRIL/2026', vagas: 12 },
+        { month: 'MAIO/2026', vagas: 12 }, { month: 'JUNHO/2026', vagas: 8 },
+        { month: 'JULHO/2026', vagas: 9 }, { month: 'AGOSTO/2026', vagas: 8 },
+        { month: 'SETEMBRO/2026', vagas: 6 }, { month: 'OUTUBRO/2026', vagas: 12 },
     ];
 
     useEffect(() => {
@@ -144,7 +162,7 @@ const CategorySelectionPage: React.FC = () => {
         }, 1500);
     };
 
-    const handleProsseguir = () => {
+    const handleProsseguir1 = () => {
         if (conversationStep !== 1) return;
 
         addMessage('user', "Prosseguir");
@@ -159,6 +177,30 @@ const CategorySelectionPage: React.FC = () => {
                 </p>
             ));
         }, 1500);
+    };
+
+    const handleProsseguir2 = () => {
+        if (conversationStep !== 2) return;
+
+        addMessage('user', "Prosseguir");
+        setConversationStep(3);
+        setIsBotTyping(true);
+
+        setTimeout(() => {
+            setIsBotTyping(false);
+            addMessage('bot', "Selecione o mês de sua preferência para realização das avaliações:");
+        }, 1500);
+    };
+
+    const handleMonthSelect = (month: string) => {
+        if (conversationStep !== 3) return;
+
+        addMessage('user', month);
+        setConversationStep(4);
+        
+        setTimeout(() => {
+            navigate('/thank-you', { state: { userData } });
+        }, 1000);
     };
 
     return (
@@ -187,7 +229,7 @@ const CategorySelectionPage: React.FC = () => {
                                     {isLastMessage && conversationStep === 1 && !isBotTyping && (
                                         <div className="mt-4 animate-fade-in">
                                             <button 
-                                                onClick={handleProsseguir}
+                                                onClick={handleProsseguir1}
                                                 className="p-3 border border-gray-300 bg-white rounded-lg hover:bg-gray-50 transition-colors text-gray-700 font-medium shadow-sm"
                                             >
                                                 Prosseguir
@@ -197,11 +239,23 @@ const CategorySelectionPage: React.FC = () => {
                                     {isLastMessage && conversationStep === 2 && !isBotTyping && (
                                         <div className="mt-4 animate-fade-in">
                                             <button 
-                                                onClick={() => navigate('/thank-you', { state: { userData } })}
+                                                onClick={handleProsseguir2}
                                                 className="p-3 border border-gray-300 bg-white rounded-lg hover:bg-gray-50 transition-colors text-gray-700 font-medium shadow-sm"
                                             >
                                                 Prosseguir
                                             </button>
+                                        </div>
+                                    )}
+                                    {isLastMessage && conversationStep === 3 && !isBotTyping && (
+                                        <div className="grid grid-cols-2 gap-3 mt-4 animate-fade-in">
+                                            {monthOptions.map(opt => (
+                                                <MonthOption
+                                                    key={opt.month}
+                                                    month={opt.month}
+                                                    vagas={opt.vagas}
+                                                    onClick={() => handleMonthSelect(opt.month)}
+                                                />
+                                            ))}
                                         </div>
                                     )}
                                 </div>
