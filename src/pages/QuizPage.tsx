@@ -70,6 +70,47 @@ const quizQuestions = [
             "Tudo isso",
         ],
     },
+    {
+        id: 5,
+        question: "Você sente que já perdeu oportunidades por não ter CNH?",
+        options: [
+            "Sim, várias",
+            "Sim, algumas",
+            "Talvez",
+            "Não tinha pensado nisso",
+            "Não",
+        ],
+    },
+    {
+        id: 6,
+        question: "Como você prefere aprender para a prova teórica?",
+        options: [
+            "Sozinho(a), usando materiais online",
+            "Com aulas e um instrutor para tirar dúvidas",
+            "Com ajuda de amigos ou familiares que já têm CNH",
+            "Através de aplicativos e simulados no celular",
+        ],
+    },
+    {
+        id: 7,
+        question: "Qual seu nível de urgência para resolver isso?",
+        options: [
+            "Urgente — preciso da CNH o quanto antes",
+            "Alta — não quero mais adiar",
+            "Média — quero planejar com calma",
+            "Baixa — só estou pesquisando por enquanto",
+        ],
+    },
+    {
+        id: 8,
+        question: "Se você pudesse começar o processo hoje, com todo o apoio necessário, como você se sentiria?",
+        options: [
+            "Muito animado(a) e confiante",
+            "Otimista, mas um pouco ansioso(a)",
+            "Aliviado(a) por finalmente começar",
+            "Ainda um pouco inseguro(a), mas disposto(a) a tentar",
+        ],
+    },
 ];
 
 const QuizPage: React.FC = () => {
