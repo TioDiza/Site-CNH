@@ -417,6 +417,12 @@ const CategorySelectionPage: React.FC = () => {
                         {monthOptions.map(opt => <MonthOption key={opt.month} {...opt} onClick={() => handleMonthSelect(opt.month)} />)}
                     </div>
                 );
+            case 5:
+                return (
+                    <div className="mt-4 animate-fade-in">
+                        <button onClick={handleFinalProsseguir} className="p-3 border border-gray-300 bg-white rounded-lg hover:bg-gray-50 transition-colors text-gray-700 font-medium shadow-sm">Prosseguir</button>
+                    </div>
+                );
             default:
                 return null;
         }
@@ -437,13 +443,6 @@ const CategorySelectionPage: React.FC = () => {
                     {isBotTyping && <LoadingMessage />}
                     <div ref={chatEndRef} />
                 </div>
-                {conversationStep === 5 && !isBotTyping && (
-                    <div className="mt-4 animate-fade-in">
-                        <button onClick={handleFinalProsseguir} className="w-full bg-[#004381] text-white py-3 rounded-lg font-bold text-lg hover:bg-blue-700 transition-colors">
-                            Prosseguir &gt;
-                        </button>
-                    </div>
-                )}
             </main>
         </div>
     );
