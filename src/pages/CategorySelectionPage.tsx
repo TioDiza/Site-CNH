@@ -255,7 +255,12 @@ const CategorySelectionPage: React.FC = () => {
     };
 
     const handleMonthSelect = (month: string) => {
-        if (conversationStep !== 3 || !userData || !selectedState || !selectedCategory) return;
+        if (conversationStep !== 3) return;
+        
+        if (!userData || !selectedState || !selectedCategory) {
+            addMessage('bot', 'Ocorreu um erro. Por favor, tente novamente.');
+            return;
+        }
 
         addMessage('user', month);
         setConversationStep(4);
