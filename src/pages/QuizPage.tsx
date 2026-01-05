@@ -113,7 +113,7 @@ const QuizPage: React.FC = () => {
             } else {
                 // Quiz finished
                 console.log("Respostas Finais:", newAnswers);
-                navigate('/thank-you');
+                navigate('/contact-info', { state: { answers: newAnswers } });
             }
         } else {
             alert("Por favor, selecione uma opção.");
