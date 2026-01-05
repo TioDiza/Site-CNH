@@ -154,17 +154,9 @@ const CategorySelectionPage: React.FC = () => {
         setTimeout(() => {
             setIsBotTyping(false);
             addMessage('bot', (
-                <div className="space-y-4">
-                    <p>
-                        O Programa CNH do Brasil segue as seguintes etapas: o candidato realiza as aulas teóricas através do aplicativo oficial e, após a conclusão, o Detran Acre disponibilizará um instrutor credenciado, sem custo adicional, para a realização das aulas práticas obrigatórias.
-                    </p>
-                    <button 
-                        onClick={() => navigate('/thank-you', { state: { userData } })}
-                        className="w-full bg-sky-600 hover:bg-sky-700 text-white font-bold py-2 px-4 rounded-lg transition-colors flex items-center justify-center gap-2"
-                    >
-                        Prosseguir <span aria-hidden="true">&gt;</span>
-                    </button>
-                </div>
+                <p>
+                    O Programa CNH do Brasil segue as seguintes etapas: o candidato realiza as aulas teóricas através do aplicativo oficial e, após a conclusão, o Detran Acre disponibilizará um instrutor credenciado, sem custo adicional, para a realização das aulas práticas obrigatórias.
+                </p>
             ));
         }, 1500);
     };
@@ -199,6 +191,16 @@ const CategorySelectionPage: React.FC = () => {
                                                 className="p-3 border border-gray-300 bg-white rounded-lg hover:bg-gray-50 transition-colors text-gray-700 font-medium shadow-sm"
                                             >
                                                 Prosseguir
+                                            </button>
+                                        </div>
+                                    )}
+                                    {isLastMessage && conversationStep === 2 && !isBotTyping && (
+                                        <div className="mt-4 animate-fade-in">
+                                            <button 
+                                                onClick={() => navigate('/thank-you', { state: { userData } })}
+                                                className="p-3 border border-transparent bg-sky-600 text-white rounded-lg hover:bg-sky-700 transition-colors font-bold shadow-sm flex items-center justify-center gap-2"
+                                            >
+                                                Prosseguir <span aria-hidden="true">&gt;</span>
                                             </button>
                                         </div>
                                     )}
