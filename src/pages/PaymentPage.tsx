@@ -20,7 +20,7 @@ const PaymentHeader: React.FC<{ userName?: string }> = ({ userName }) => (
 const PaymentPage: React.FC = () => {
     const navigate = useNavigate();
     const location = useLocation();
-    const [userData, setUserData] = useState<{ name: string; cpf: string } | null>(null);
+    const [userData, setUserData] = useState<{ name: string; cpf: string; leadId: string; email: string; phone: string; } | null>(null);
     
     const [paymentData, setPaymentData] = useState<{ qrCode: string; pixCode: string; transactionId: string } | null>(null);
     const [isLoading, setIsLoading] = useState(true);
@@ -30,46 +30,37 @@ const PaymentPage: React.FC = () => {
     const FEE_AMOUNT = 87.90;
 
     useEffect(() => {
-        let data = location.state?.userData;
-        if (!data) {
-            const savedData = sessionStorage.getItem('cnh_userData');
-            if (savedData) {
-                data = JSON.parse(savedData);
-            }
+        let data: { name: string; cpf: string; leadId: string; email: string; phone: string; } | null = null;
+        
+        const savedData = sessionStorage.getItem('cnh_userData');
+        if (savedData) {
+            data = JSON.parse(savedData);
         }
 
-        if (data) {
+        if (data && data.leadId && data.email && data.phone) {
             setUserData(data);
         } else {
-            navigate('/login');
+            console.error("PaymentPage: Missing lead data in session.");
+            setError('Não foi possível encontrar seus dados de contato. Por favor, reinicie o cadastro.');
+            setIsLoading(false);
             return;
         }
 
         const generatePayment = async () => {
+            if (!data) return;
+
             try {
                 const unformattedCpf = data.cpf.replace(/\D/g, '');
-
-                const { data: leadData, error: leadError } = await supabase
-                    .from('leads')
-                    .select('id, email, phone')
-                    .eq('cpf', unformattedCpf)
-                    .order('created_at', { ascending: false })
-                    .limit(1)
-                    .single();
-
-                if (leadError || !leadData) {
-                    throw new Error('Não foi possível encontrar seus dados de contato. Por favor, reinicie o cadastro.');
-                }
 
                 const clientPayload = {
                     name: data.name,
                     document: unformattedCpf,
-                    telefone: leadData.phone.replace(/\D/g, ''),
-                    email: leadData.email,
+                    telefone: data.phone.replace(/\D/g, ''),
+                    email: data.email,
                 };
 
                 const { data: paymentResult, error: functionError } = await supabase.functions.invoke('create-payment', {
-                    body: { client: clientPayload, amount: FEE_AMOUNT, lead_id: leadData.id },
+                    body: { client: clientPayload, amount: FEE_AMOUNT, lead_id: data.leadId },
                 });
 
                 if (functionError) {
@@ -95,7 +86,7 @@ const PaymentPage: React.FC = () => {
         };
 
         generatePayment();
-    }, [location.state?.userData, navigate]);
+    }, [navigate]);
 
     const handleCopyToClipboard = () => {
         if (paymentData) {

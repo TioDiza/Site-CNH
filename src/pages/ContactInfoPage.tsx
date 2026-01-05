@@ -51,7 +51,7 @@ const ContactInfoPage: React.FC = () => {
         const { answers } = location.state || {};
         const unformattedCpf = userData?.cpf.replace(/\D/g, '');
 
-        const { error } = await supabase
+        const { data: newLead, error } = await supabase
             .from('leads')
             .insert([
                 { 
@@ -60,14 +60,26 @@ const ContactInfoPage: React.FC = () => {
                     quiz_answers: answers,
                     cpf: unformattedCpf
                 }
-            ]);
+            ])
+            .select('id')
+            .single();
 
         setIsLoading(false);
 
-        if (error) {
+        if (error || !newLead) {
             console.error('Erro ao salvar no Supabase:', error);
             alert('Ocorreu um erro ao salvar seu cadastro. Por favor, tente novamente.');
         } else {
+            const savedData = sessionStorage.getItem('cnh_userData');
+            if (savedData) {
+                const fullData = { 
+                    ...JSON.parse(savedData), 
+                    leadId: newLead.id,
+                    email: email,
+                    phone: phone
+                };
+                sessionStorage.setItem('cnh_userData', JSON.stringify(fullData));
+            }
             navigate('/eligibility', { state: { userData } });
         }
     };
