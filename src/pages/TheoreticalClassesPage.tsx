@@ -2,7 +2,7 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { User } from 'lucide-react';
 
-const AppAccessHeader: React.FC = () => (
+const TheoreticalClassesHeader: React.FC = () => (
     <header className="bg-white border-b border-gray-200">
         <div className="max-w-4xl mx-auto px-4">
             <div className="py-3 flex items-center justify-between">
@@ -24,24 +24,24 @@ const AppAccessHeader: React.FC = () => (
     </header>
 );
 
-const AppAccessPage: React.FC = () => {
+const TheoreticalClassesPage: React.FC = () => {
     const navigate = useNavigate();
 
     const handleNext = () => {
-        navigate('/theoretical-classes');
+        navigate('/thank-you');
     };
 
     return (
         <div className="bg-gray-50 min-h-screen">
-            <AppAccessHeader />
+            <TheoreticalClassesHeader />
             <main className="max-w-xl mx-auto px-4 py-12">
                 <div className="bg-white p-8 rounded-lg shadow-md border border-gray-200">
                     <div className="flex items-start gap-4 mb-6">
                         <div className="flex-shrink-0 w-8 h-8 bg-[#0d6efd] text-white rounded-full flex items-center justify-center font-bold text-lg">
-                            2
+                            3
                         </div>
                         <h1 className="text-2xl font-bold text-gray-800 pt-0.5">
-                            Acesso ao Aplicativo
+                            Aulas Teóricas
                         </h1>
                     </div>
 
@@ -53,7 +53,7 @@ const AppAccessPage: React.FC = () => {
 
                     <div className="bg-gray-50 p-6 rounded-lg mb-8">
                         <p className="text-gray-700 leading-relaxed text-center">
-                            Após finalizar seu cadastro, você receberá acesso ao aplicativo oficial do programa. Use seu CPF para acessar e acompanhar todo o processo de obtenção da sua CNH de forma simples e prática.
+                            Suas aulas teóricas serão realizadas 100% pelo aplicativo, totalmente GRATUITAS! Para a parte prática, você precisará fazer apenas 2 horas de aula com um instrutor credenciado pelo DETRAN. Se você for aprovado para a gratuidade do programa, essas aulas práticas também serão gratuitas!
                         </p>
                     </div>
 
@@ -69,4 +69,4 @@ const AppAccessPage: React.FC = () => {
     );
 };
 
-export default AppAccessPage;
+export default TheoreticalClassesPage;

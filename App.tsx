@@ -8,6 +8,7 @@ import ContactInfoPage from './src/pages/ContactInfoPage';
 import EligibilityPage from './src/pages/EligibilityPage';
 import ThankYouPage from './src/pages/ThankYouPage';
 import AppAccessPage from './src/pages/AppAccessPage';
+import TheoreticalClassesPage from './src/pages/TheoreticalClassesPage';
 
 const App: React.FC = () => {
   return (
@@ -19,6 +20,7 @@ const App: React.FC = () => {
       <Route path="/contact-info" element={<ContactInfoPage />} />
       <Route path="/eligibility" element={<EligibilityPage />} />
       <Route path="/app-access" element={<AppAccessPage />} />
+      <Route path="/theoretical-classes" element={<TheoreticalClassesPage />} />
       <Route path="/thank-you" element={<ThankYouPage />} />
     </Routes>
   );
