@@ -5,13 +5,25 @@ import { User, MoreVertical, Globe, AppWindow } from 'lucide-react';
 // --- Interfaces ---
 interface UserData {
     name: string;
+    cpf: string;
 }
 
 interface Message {
     id: number;
-    sender: 'bot' | 'user';
+    sender: 'bot' | 'user' | 'component';
     content: React.ReactNode;
 }
+
+// --- State Abbreviations ---
+const stateAbbreviations: { [key: string]: string } = {
+    'Acre': 'AC', 'Alagoas': 'AL', 'Amapá': 'AP', 'Amazonas': 'AM', 'Bahia': 'BA',
+    'Ceará': 'CE', 'Distrito Federal': 'DF', 'Espírito Santo': 'ES', 'Goiás': 'GO',
+    'Maranhão': 'MA', 'Mato Grosso': 'MT', 'Mato Grosso do Sul': 'MS', 'Minas Gerais': 'MG',
+    'Pará': 'PA', 'Paraíba': 'PB', 'Paraná': 'PR', 'Pernambuco': 'PE', 'Piauí': 'PI',
+    'Rio de Janeiro': 'RJ', 'Rio Grande do Norte': 'RN', 'Rio Grande do Sul': 'RS',
+    'Rondônia': 'RO', 'Roraima': 'RR', 'Santa Catarina': 'SC', 'São Paulo': 'SP',
+    'Sergipe': 'SE', 'Tocantins': 'TO'
+};
 
 // --- Components ---
 
@@ -104,8 +116,55 @@ const MonthOption: React.FC<{ month: string; vagas: number; onClick: () => void 
     </button>
 );
 
+const ComprovanteCadastro: React.FC<{
+    userData: UserData;
+    selectedState: string;
+    selectedMonth: string;
+    selectedCategory: string;
+    renach: string;
+    protocolo: string;
+    emissionDate: string;
+}> = ({ userData, selectedState, selectedMonth, selectedCategory, renach, protocolo, emissionDate }) => {
+    const stateAbbr = stateAbbreviations[selectedState || ''] || '';
+    return (
+        <div className="bg-white text-gray-800 rounded-lg border border-gray-200 p-4 font-sans text-sm w-full max-w-md shadow-lg">
+            <div className="flex justify-between items-center mb-4">
+                <p className="font-bold text-lg tracking-wider">DETRAN.{stateAbbr}</p>
+                <p className="text-xs text-gray-500">Protocolo: {protocolo}</p>
+            </div>
+            <p className="text-center font-bold text-gray-600 mb-6">COMPROVANTE DE CADASTRO - RENACH</p>
+            <div className="grid grid-cols-2 gap-y-4 text-left">
+                <div>
+                    <p className="text-xs text-gray-500">NOME</p>
+                    <p className="font-semibold">{userData.name}</p>
+                </div>
+                <div>
+                    <p className="text-xs text-gray-500">CPF</p>
+                    <p className="font-semibold">{userData.cpf}</p>
+                </div>
+                <div className="bg-blue-50 p-3 rounded-l-md -ml-4">
+                    <p className="text-xs text-gray-500">Nº RENACH</p>
+                    <p className="font-bold text-blue-700">{renach}</p>
+                </div>
+                <div className="bg-blue-50 p-3 rounded-r-md -mr-4">
+                    <p className="text-xs text-gray-500">CATEGORIA</p>
+                    <p className="font-bold">{selectedCategory}</p>
+                </div>
+                <div>
+                    <p className="text-xs text-gray-500">MÊS PREVISTO</p>
+                    <p className="font-semibold">{selectedMonth.replace('/', '/ ')}</p>
+                </div>
+                <div>
+                    <p className="text-xs text-gray-500">STATUS</p>
+                    <p className="font-bold text-orange-500">PENDENTE</p>
+                </div>
+            </div>
+            <p className="text-center text-xs text-gray-400 mt-6">Emitido em {emissionDate}</p>
+        </div>
+    );
+};
+
 const CategorySelectionPage: React.FC = () => {
-    const navigate = useNavigate();
     const location = useLocation();
     const userData = location.state?.userData as UserData | undefined;
     const selectedState = location.state?.selectedState as string | undefined;
@@ -114,6 +173,7 @@ const CategorySelectionPage: React.FC = () => {
     const [messages, setMessages] = useState<Message[]>([]);
     const [isBotTyping, setIsBotTyping] = useState(false);
     const [conversationStep, setConversationStep] = useState(0);
+    const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
     const chatEndRef = useRef<HTMLDivElement>(null);
 
     const categoryOptions = [
@@ -142,13 +202,14 @@ const CategorySelectionPage: React.FC = () => {
         chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [messages, isBotTyping]);
 
-    const addMessage = (sender: 'bot' | 'user', content: React.ReactNode) => {
+    const addMessage = (sender: 'bot' | 'user' | 'component', content: React.ReactNode) => {
         setMessages(prev => [...prev, { id: Date.now(), sender, content }]);
     };
 
-    const handleCategorySelect = (description: string) => {
+    const handleCategorySelect = (category: string, description: string) => {
         if (conversationStep !== 0) return;
         
+        setSelectedCategory(category);
         addMessage('user', description);
         setConversationStep(1);
         setIsBotTyping(true);
@@ -194,14 +255,39 @@ const CategorySelectionPage: React.FC = () => {
     };
 
     const handleMonthSelect = (month: string) => {
-        if (conversationStep !== 3) return;
+        if (conversationStep !== 3 || !userData || !selectedState || !selectedCategory) return;
 
         addMessage('user', month);
         setConversationStep(4);
-        
+        setIsBotTyping(true);
+
+        const renach = Math.floor(1000000000 + Math.random() * 9000000000).toString();
+        const protocolo = `2026658${Math.floor(100000 + Math.random() * 900000).toString()}`;
+        const emissionDate = new Date().toLocaleString('pt-BR', {
+            day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'
+        }).replace(',', ' às');
+
         setTimeout(() => {
-            navigate('/thank-you', { state: { userData, selectedState } });
-        }, 1000);
+            setIsBotTyping(false);
+            addMessage('bot', (
+                <>
+                    <p className="mb-4">Prezado(a) {firstName}, seu número de RENACH foi gerado com sucesso junto ao Detran {selectedState}.</p>
+                    <p className="mb-4"><strong>Número do RENACH: {renach}</strong></p>
+                    <p>O RENACH (Registro Nacional de Carteira de Habilitação) é o número de identificação único do candidato no Sistema Nacional de Habilitação.</p>
+                </>
+            ));
+            addMessage('component', 
+                <ComprovanteCadastro
+                    userData={userData}
+                    selectedState={selectedState}
+                    selectedMonth={month}
+                    selectedCategory={selectedCategory}
+                    renach={renach}
+                    protocolo={protocolo}
+                    emissionDate={emissionDate}
+                />
+            );
+        }, 2000);
     };
 
     return (
@@ -222,7 +308,7 @@ const CategorySelectionPage: React.FC = () => {
                                                     key={opt.category}
                                                     category={opt.category}
                                                     description={opt.description}
-                                                    onClick={() => handleCategorySelect(opt.description)}
+                                                    onClick={() => handleCategorySelect(opt.category, opt.description)}
                                                 />
                                             ))}
                                         </div>
@@ -263,6 +349,7 @@ const CategorySelectionPage: React.FC = () => {
                             );
                         }
                         if (msg.sender === 'user') return <UserMessage key={msg.id}>{msg.content}</UserMessage>;
+                        if (msg.sender === 'component') return <div key={msg.id} className="animate-fade-in">{msg.content}</div>;
                         return null;
                     })}
                     {isBotTyping && <LoadingMessage />}
