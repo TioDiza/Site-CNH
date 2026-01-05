@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { User, Loader2, ClipboardCopy, CheckCircle, AlertTriangle } from 'lucide-react';
+import { User, Loader2, ClipboardCopy, CheckCircle, AlertTriangle, Smartphone, Info } from 'lucide-react';
 import { supabase } from '../integrations/supabase/client';
 
 const PaymentHeader: React.FC<{ userName?: string }> = ({ userName }) => (
@@ -20,46 +20,56 @@ const PaymentHeader: React.FC<{ userName?: string }> = ({ userName }) => (
 const PaymentPage: React.FC = () => {
     const navigate = useNavigate();
     const location = useLocation();
-    const userData = location.state?.userData as { name: string; cpf: string } | undefined;
+    const [userData, setUserData] = useState<{ name: string; cpf: string } | null>(null);
     
-    const [paymentData, setPaymentData] = useState<{ qrCode: string; pixCode: string } | null>(null);
+    const [paymentData, setPaymentData] = useState<{ qrCode: string; pixCode: string; transactionId: string } | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [isCopied, setIsCopied] = useState(false);
 
-    const FEE_AMOUNT = 49.90;
+    const FEE_AMOUNT = 87.90;
 
     useEffect(() => {
-        if (!userData) {
+        let data = location.state?.userData;
+        if (!data) {
+            const savedData = sessionStorage.getItem('cnh_userData');
+            if (savedData) {
+                data = JSON.parse(savedData);
+            }
+        }
+
+        if (data) {
+            setUserData(data);
+        } else {
             navigate('/login');
             return;
         }
 
         const generatePayment = async () => {
             try {
-                const unformattedCpf = userData.cpf.replace(/\D/g, '');
+                const unformattedCpf = data.cpf.replace(/\D/g, '');
 
                 const { data: leadData, error: leadError } = await supabase
                     .from('leads')
-                    .select('email, phone')
+                    .select('id, email, phone')
                     .eq('cpf', unformattedCpf)
                     .order('created_at', { ascending: false })
                     .limit(1)
                     .single();
 
                 if (leadError || !leadData) {
-                    throw new Error('Não foi possível encontrar seus dados de contato. Por favor, tente novamente.');
+                    throw new Error('Não foi possível encontrar seus dados de contato. Por favor, reinicie o cadastro.');
                 }
 
                 const clientPayload = {
-                    name: userData.name,
+                    name: data.name,
                     document: unformattedCpf,
                     telefone: leadData.phone.replace(/\D/g, ''),
                     email: leadData.email,
                 };
 
                 const { data: paymentResult, error: functionError } = await supabase.functions.invoke('create-payment', {
-                    body: { client: clientPayload, amount: FEE_AMOUNT },
+                    body: { client: clientPayload, amount: FEE_AMOUNT, lead_id: leadData.id },
                 });
 
                 if (functionError) {
@@ -73,6 +83,7 @@ const PaymentPage: React.FC = () => {
                 setPaymentData({
                     qrCode: paymentResult.paymentCodeBase64,
                     pixCode: paymentResult.paymentCode,
+                    transactionId: paymentResult.idTransaction,
                 });
 
             } catch (err: any) {
@@ -84,7 +95,7 @@ const PaymentPage: React.FC = () => {
         };
 
         generatePayment();
-    }, [userData, navigate]);
+    }, [location.state?.userData, navigate]);
 
     const handleCopyToClipboard = () => {
         if (paymentData) {
@@ -100,9 +111,32 @@ const PaymentPage: React.FC = () => {
         <div className="bg-gray-50 min-h-screen">
             <PaymentHeader userName={firstName} />
             <main className="max-w-xl mx-auto px-4 py-12">
-                <div className="bg-white p-8 rounded-lg shadow-md border border-gray-200">
-                    <h1 className="text-2xl font-bold text-gray-800 mb-2">Pagamento da Taxa de Adesão</h1>
-                    <p className="text-gray-600 mb-8">Para concluir sua inscrição no Programa CNH do Brasil, realize o pagamento da taxa administrativa via PIX.</p>
+                <div className="bg-white p-6 md:p-8 rounded-lg shadow-md border border-gray-200">
+                    <h1 className="text-2xl md:text-3xl font-bold text-gray-800 mb-2 text-center">Taxa de Emissão da CNH</h1>
+                    <p className="text-gray-600 mb-6 text-center">Esta é a última taxa obrigatória. Após a confirmação do pagamento, você receberá acesso completo ao aplicativo do Programa CNH do Brasil.</p>
+
+                    <div className="flex justify-center my-6">
+                        <div className="w-24 h-24 bg-blue-100 rounded-full flex items-center justify-center">
+                            <Smartphone size={48} className="text-blue-600" />
+                        </div>
+                    </div>
+
+                    <div className="bg-blue-50 border-l-4 border-blue-500 text-blue-800 p-4 rounded-md mb-6 space-y-2">
+                        <p className="font-bold flex items-center gap-2"><Info size={20} /> Importante</p>
+                        <ul className="list-disc list-inside text-sm space-y-1 pl-2">
+                            <li>Esta taxa é <strong>obrigatória</strong> para finalizar seu cadastro no Programa CNH do Brasil</li>
+                            <li>Valor único pago uma única vez</li>
+                            <li>Taxa destinada ao processo de emissão e regularização da CNH</li>
+                            <li>Seu cadastro só será concluído após a confirmação deste pagamento</li>
+                        </ul>
+                    </div>
+
+                    <div className="bg-red-50 border-l-4 border-red-500 text-red-800 p-4 rounded-md mb-8">
+                        <p className="font-bold flex items-center gap-2"><AlertTriangle size={20} /> Atenção</p>
+                        <p className="text-sm mt-2">
+                            Informamos que, caso o pagamento da <strong>Taxa de Emissão da CNH</strong> não seja realizado, seu cadastro <strong>não será concluído</strong> e você <strong>perderá o direito de participar do Programa CNH do Brasil</strong>. Conforme o art. 49, §2º da Lei nº 8.078/1990 (Código de Defesa do Consumidor), não haverá reembolso do valor já pago referente às taxas administrativas, uma vez que o serviço de processamento já foi iniciado junto ao DETRAN.
+                        </p>
+                    </div>
 
                     {isLoading && (
                         <div className="flex flex-col items-center justify-center text-center py-12">
@@ -124,42 +158,48 @@ const PaymentPage: React.FC = () => {
 
                     {paymentData && (
                         <div className="flex flex-col items-center text-center animate-fade-in">
-                            <p className="text-lg font-semibold text-gray-800">Valor a pagar:</p>
-                            <p className="text-4xl font-bold text-blue-700 my-2">
+                            <p className="text-lg font-semibold text-gray-800">Taxa única de emissão</p>
+                            <p className="text-5xl font-bold text-gray-900 my-2">
                                 R$ {FEE_AMOUNT.toFixed(2).replace('.', ',')}
                             </p>
                             
+                            <div className="bg-yellow-100 text-yellow-800 font-semibold px-4 py-2 rounded-full my-4 text-sm">
+                                Aguardando pagamento... O pagamento será confirmado automaticamente
+                            </div>
+
                             <img 
                                 src={`data:image/png;base64,${paymentData.qrCode}`} 
                                 alt="QR Code para pagamento PIX"
-                                className="w-64 h-64 rounded-lg border-4 border-gray-200 my-6"
+                                className="w-64 h-64 rounded-lg border-4 border-gray-200 my-4"
                             />
-                            <p className="font-semibold text-gray-700 mb-4">Abra o app do seu banco e escaneie o QR Code</p>
+                            <p className="font-semibold text-gray-700 mb-4">Escaneie o QR Code com o app do seu banco</p>
                             
-                            <div className="w-full my-4 flex items-center gap-2">
-                                <hr className="flex-grow" />
-                                <span className="text-gray-500 font-semibold">OU</span>
-                                <hr className="flex-grow" />
-                            </div>
-
-                            <p className="font-semibold text-gray-700 mb-2">Copie o código PIX e pague no seu banco:</p>
-                            <div className="relative w-full">
-                                <input 
-                                    type="text"
+                            <p className="font-semibold text-gray-700 mb-2 mt-4">Código PIX Copia e Cola:</p>
+                            <div className="relative w-full mb-4">
+                                <textarea
                                     readOnly
                                     value={paymentData.pixCode}
-                                    className="w-full bg-gray-100 border border-gray-300 rounded-lg p-3 pr-12 text-sm text-gray-600 truncate"
+                                    className="w-full bg-gray-100 border border-gray-300 rounded-lg p-3 text-sm text-gray-600 resize-none h-24"
                                 />
-                                <button 
-                                    onClick={handleCopyToClipboard}
-                                    className="absolute right-1 top-1/2 -translate-y-1/2 p-2 text-gray-500 hover:bg-gray-200 rounded-md"
-                                >
-                                    {isCopied ? <CheckCircle className="text-green-600" /> : <ClipboardCopy />}
-                                </button>
                             </div>
-                             <div className="mt-8 bg-yellow-100 border-l-4 border-yellow-500 text-yellow-800 p-4 rounded-md text-left">
-                                <p><strong>Atenção:</strong> Após o pagamento, a confirmação pode levar alguns minutos. Você receberá o acesso ao aplicativo de aulas por e-mail e SMS.</p>
+                            <button 
+                                onClick={handleCopyToClipboard}
+                                className="w-full bg-[#0d6efd] text-white py-3 rounded-lg font-bold text-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
+                            >
+                                {isCopied ? <><CheckCircle size={20} /> Copiado!</> : <><ClipboardCopy size={20} /> Copiar Código PIX</>}
+                            </button>
+
+                            <div className="w-full bg-gray-50 border border-gray-200 rounded-lg p-4 mt-8 text-left">
+                                <h3 className="font-bold text-gray-800 mb-2">Como pagar:</h3>
+                                <ol className="list-decimal list-inside text-sm space-y-1 text-gray-600">
+                                    <li>Abra o aplicativo do seu banco</li>
+                                    <li>Acesse a opção PIX</li>
+                                    <li>Escaneie o QR Code ou cole o código PIX</li>
+                                    <li>Confirme o pagamento conforme valor indicado</li>
+                                </ol>
                             </div>
+
+                            <p className="text-xs text-gray-400 mt-6">ID da Transação: {paymentData.transactionId}</p>
                         </div>
                     )}
                 </div>

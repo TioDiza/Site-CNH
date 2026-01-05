@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts"
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -6,10 +7,14 @@ const corsHeaders = {
 }
 
 serve(async (req) => {
-  // The preflight request for CORS
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
   }
+
+  const supabaseAdmin = createClient(
+    Deno.env.get('SUPABASE_URL') ?? '',
+    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+  );
 
   try {
     const payload = await req.json();
@@ -17,39 +22,51 @@ serve(async (req) => {
 
     const transactionId = payload.idTransaction || payload.externalReference;
     const status = payload.status;
+    let dbStatus = '';
 
-    // Logic to handle different webhook statuses
-    switch (status) {
-      case 'paid':
-        console.log(`Handling successful cash-in for transaction: ${transactionId}`);
-        // TODO: Update transaction status to 'paid' in the database.
-        break;
-      
-      case 'SaquePago':
-        console.log(`Handling successful cash-out for transaction: ${transactionId}`);
-        // TODO: Update transaction status to 'paid' in the database.
-        break;
-
-      case 'SaqueFalhou':
-        console.log(`Handling failed cash-out for transaction: ${transactionId}`);
-        // TODO: Update transaction status to 'failed' in the database.
-        break;
-
-      case 'refund_approved':
-        console.log(`Handling refund (MED Pix) for transaction: ${transactionId}`);
-        // TODO: Update transaction status to 'refunded' in the database.
-        break;
-      
-      case 'canceled':
-         console.log(`Handling canceled Pix for transaction: ${transactionId}`);
-         // TODO: Update transaction status to 'canceled' in the database.
-         break;
-
-      default:
-        console.warn(`Received unknown webhook status: ${status}`);
+    if (!transactionId || !status) {
+        console.warn('Webhook received without transactionId or status');
+        return new Response(JSON.stringify({ status: "received, but malformed" }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 200,
+        });
     }
 
-    // IMPORTANT: Respond immediately with 200 OK as per Royal Banking docs
+    switch (status) {
+      case 'paid':
+        dbStatus = 'paid';
+        break;
+      case 'SaquePago':
+        dbStatus = 'paid';
+        break;
+      case 'SaqueFalhou':
+        dbStatus = 'failed';
+        break;
+      case 'refund_approved':
+        dbStatus = 'refunded';
+        break;
+      case 'canceled':
+         dbStatus = 'canceled';
+         break;
+      default:
+        console.warn(`Received unknown webhook status: ${status}`);
+        return new Response(JSON.stringify({ status: "received, unknown status" }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 200,
+        });
+    }
+
+    const { error } = await supabaseAdmin
+      .from('transactions')
+      .update({ status: dbStatus, raw_gateway_response: payload })
+      .eq('gateway_transaction_id', transactionId);
+
+    if (error) {
+      console.error(`Failed to update transaction ${transactionId} to status ${dbStatus}:`, error);
+    } else {
+      console.log(`Successfully updated transaction ${transactionId} to status ${dbStatus}`);
+    }
+
     return new Response(JSON.stringify({ status: "received" }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200,

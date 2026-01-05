@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts"
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -6,13 +7,18 @@ const corsHeaders = {
 }
 
 const ROYAL_BANKING_API_URL = 'https://api.royalbanking.com.br/v1/gateway/';
-// IMPORTANT: Set this in the Supabase Dashboard: Project -> Edge Functions -> create-payment -> Manage Secrets
 const ROYAL_BANKING_API_KEY = Deno.env.get('ROYAL_BANKING_API_KEY'); 
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
   }
+
+  // Create Supabase client with service_role key
+  const supabaseAdmin = createClient(
+    Deno.env.get('SUPABASE_URL') ?? '',
+    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+  );
 
   if (!ROYAL_BANKING_API_KEY) {
     console.error('ROYAL_BANKING_API_KEY secret is not set.');
@@ -23,9 +29,9 @@ serve(async (req) => {
   }
 
   try {
-    const { client, amount } = await req.json();
+    const { client, amount, lead_id } = await req.json();
 
-    if (!client || !client.name || !client.document || !client.telefone || !client.email || !amount) {
+    if (!client || !client.name || !client.document || !client.telefone || !client.email || !amount || !lead_id) {
       return new Response(JSON.stringify({ error: 'Faltam informações obrigatórias para o pagamento.' }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 400,
@@ -41,7 +47,7 @@ serve(async (req) => {
         telefone: client.telefone,
         email: client.email,
       },
-      callbackUrl: "https://exemplo.com/royalbanking/callback" // Placeholder
+      callbackUrl: `https://lubhskftgevcgfkzxozx.supabase.co/functions/v1/payment-webhook`
     };
 
     const response = await fetch(ROYAL_BANKING_API_URL, {
@@ -54,11 +60,32 @@ serve(async (req) => {
 
     const data = await response.json();
 
-    if (!response.ok) {
+    if (!response.ok || data.status !== 'success') {
+        console.error('Gateway Error:', data);
         return new Response(JSON.stringify(data), {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
             status: response.status,
         });
+    }
+
+    // Save transaction to the database
+    const { error: dbError } = await supabaseAdmin
+      .from('transactions')
+      .insert({
+        lead_id: lead_id,
+        gateway_transaction_id: data.idTransaction,
+        amount: amount,
+        status: 'pending',
+        provider: 'royal_banking',
+        raw_gateway_response: data,
+      });
+
+    if (dbError) {
+      console.error('Database insert error:', dbError);
+      return new Response(JSON.stringify({ error: 'Falha ao salvar a transação no banco de dados.' }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 500,
+      });
     }
 
     return new Response(JSON.stringify(data), {
