@@ -160,7 +160,7 @@ const CategorySelectionPage: React.FC = () => {
                     </p>
                     <button 
                         onClick={() => navigate('/thank-you', { state: { userData } })}
-                        className="w-full bg-white/20 hover:bg-white/30 text-white font-bold py-2 px-4 rounded-lg transition-colors flex items-center justify-center gap-2"
+                        className="w-full bg-sky-600 hover:bg-sky-700 text-white font-bold py-2 px-4 rounded-lg transition-colors flex items-center justify-center gap-2"
                     >
                         Prosseguir <span aria-hidden="true">&gt;</span>
                     </button>
