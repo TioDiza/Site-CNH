@@ -9,7 +9,7 @@ interface UserData {
 
 interface Message {
     id: number;
-    sender: 'bot' | 'user' | 'loading';
+    sender: 'bot' | 'user';
     content: React.ReactNode;
 }
 
@@ -97,7 +97,8 @@ const CategorySelectionPage: React.FC = () => {
     const firstName = userData?.name.split(' ')[0];
 
     const [messages, setMessages] = useState<Message[]>([]);
-    const [step, setStep] = useState<'initial' | 'loading' | 'final'>('initial');
+    const [isBotTyping, setIsBotTyping] = useState(false);
+    const [conversationStep, setConversationStep] = useState(0);
     const chatEndRef = useRef<HTMLDivElement>(null);
 
     const categoryOptions = [
@@ -116,44 +117,52 @@ const CategorySelectionPage: React.FC = () => {
 
     useEffect(() => {
         chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }, [messages]);
+    }, [messages, isBotTyping]);
+
+    const addMessage = (sender: 'bot' | 'user', content: React.ReactNode) => {
+        setMessages(prev => [...prev, { id: Date.now(), sender, content }]);
+    };
 
     const handleCategorySelect = (description: string) => {
-        if (step !== 'initial') return;
-
-        setMessages(prev => [...prev, { id: Date.now(), sender: 'user', content: description }]);
-        setStep('loading');
-
-        setTimeout(() => {
-            setMessages(prev => [...prev, { id: Date.now() + 1, sender: 'loading', content: <LoadingMessage /> }]);
-        }, 500);
+        if (conversationStep !== 0) return;
+        
+        addMessage('user', description);
+        setConversationStep(1);
+        setIsBotTyping(true);
 
         setTimeout(() => {
-            setMessages(prev => {
-                const filtered = prev.filter(m => m.sender !== 'loading');
-                return [...filtered, {
-                    id: Date.now() + 2,
-                    sender: 'bot',
-                    content: (
-                        <div className="space-y-4">
-                            <p>
-                                Prezado(a) {firstName}, informamos que as aulas teóricas do Programa CNH do Brasil podem ser realizadas de forma remota, por meio de dispositivo móvel ou computador, conforme sua disponibilidade de horário.
-                            </p>
-                            <p>
-                                Após a finalização do cadastro, o sistema liberará o acesso ao aplicativo oficial com o passo a passo completo, e você já poderá iniciar as aulas imediatamente.
-                            </p>
-                            <button 
-                                onClick={() => navigate('/thank-you', { state: { userData } })}
-                                className="w-full bg-white/20 hover:bg-white/30 text-white font-bold py-2 px-4 rounded-lg transition-colors flex items-center justify-center gap-2"
-                            >
-                                Prosseguir <span aria-hidden="true">&gt;</span>
-                            </button>
-                        </div>
-                    )
-                }];
-            });
-            setStep('final');
-        }, 2500);
+            setIsBotTyping(false);
+            addMessage('bot', (
+                <p>
+                    Prezado(a) {firstName}, informamos que as aulas teóricas do Programa CNH do Brasil podem ser realizadas de forma remota, por meio de dispositivo móvel ou computador, conforme sua disponibilidade de horário.
+                </p>
+            ));
+        }, 1500);
+    };
+
+    const handleProsseguir = () => {
+        if (conversationStep !== 1) return;
+
+        addMessage('user', "Prosseguir");
+        setConversationStep(2);
+        setIsBotTyping(true);
+
+        setTimeout(() => {
+            setIsBotTyping(false);
+            addMessage('bot', (
+                <div className="space-y-4">
+                    <p>
+                        O Programa CNH do Brasil segue as seguintes etapas: o candidato realiza as aulas teóricas através do aplicativo oficial e, após a conclusão, o Detran Acre disponibilizará um instrutor credenciado, sem custo adicional, para a realização das aulas práticas obrigatórias.
+                    </p>
+                    <button 
+                        onClick={() => navigate('/thank-you', { state: { userData } })}
+                        className="w-full bg-white/20 hover:bg-white/30 text-white font-bold py-2 px-4 rounded-lg transition-colors flex items-center justify-center gap-2"
+                    >
+                        Prosseguir <span aria-hidden="true">&gt;</span>
+                    </button>
+                </div>
+            ));
+        }, 1500);
     };
 
     return (
@@ -166,7 +175,7 @@ const CategorySelectionPage: React.FC = () => {
                             return (
                                 <div key={msg.id}>
                                     <BotMessage>{msg.content}</BotMessage>
-                                    {msg.id === 1 && step === 'initial' && (
+                                    {msg.id === 1 && conversationStep === 0 && (
                                         <div className="space-y-3 mt-4 animate-fade-in">
                                             {categoryOptions.map(opt => (
                                                 <CategoryOption
@@ -182,11 +191,22 @@ const CategorySelectionPage: React.FC = () => {
                             );
                         }
                         if (msg.sender === 'user') return <UserMessage key={msg.id}>{msg.content}</UserMessage>;
-                        if (msg.sender === 'loading') return <div key={msg.id}>{msg.content}</div>;
                         return null;
                     })}
+                    {isBotTyping && <LoadingMessage />}
                     <div ref={chatEndRef} />
                 </div>
+                
+                {conversationStep === 1 && !isBotTyping && (
+                     <div className="mt-6 flex justify-end">
+                        <button 
+                            onClick={handleProsseguir}
+                            className="p-3 border border-gray-300 bg-white rounded-lg hover:bg-gray-50 transition-colors text-gray-700 font-medium"
+                        >
+                            Prosseguir
+                        </button>
+                    </div>
+                )}
             </main>
         </div>
     );
