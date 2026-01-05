@@ -33,14 +33,25 @@ const PaymentPage: React.FC = () => {
         let data: { name: string; cpf: string; leadId: string; email: string; phone: string; } | null = null;
         
         const savedData = sessionStorage.getItem('cnh_userData');
+        
+        // Log para depuração
+        console.log("Dados brutos da sessão na página de pagamento:", savedData);
+
         if (savedData) {
-            data = JSON.parse(savedData);
+            try {
+                data = JSON.parse(savedData);
+                // Log para depuração
+                console.log("Dados da sessão após o parse:", data);
+            } catch (e) {
+                console.error("Erro ao fazer parse dos dados da sessão:", e);
+                data = null;
+            }
         }
 
         if (data && data.leadId && data.email && data.phone) {
             setUserData(data);
         } else {
-            console.error("PaymentPage: Missing lead data in session.");
+            console.error("PaymentPage: Faltam dados do lead na sessão. Dados atuais:", data);
             setError('Não foi possível encontrar seus dados de contato. Por favor, reinicie o cadastro.');
             setIsLoading(false);
             return;
@@ -78,14 +89,16 @@ const PaymentPage: React.FC = () => {
                 });
 
             } catch (err: any) {
-                console.error("Payment generation error:", err);
+                console.error("Erro na geração do pagamento:", err);
                 setError(err.message || 'Ocorreu um erro inesperado. Tente novamente mais tarde.');
             } finally {
                 setIsLoading(false);
             }
         };
 
-        generatePayment();
+        if (data) {
+            generatePayment();
+        }
     }, [navigate]);
 
     const handleCopyToClipboard = () => {
