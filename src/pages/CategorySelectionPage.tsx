@@ -168,23 +168,9 @@ const CategorySelectionPage: React.FC = () => {
     const navigate = useNavigate();
     const location = useLocation();
 
-    const [userData] = useState<UserData | undefined>(() => {
-        if (location.state?.userData) {
-            sessionStorage.setItem('cnh_userData', JSON.stringify(location.state.userData));
-            return location.state.userData;
-        }
-        const saved = sessionStorage.getItem('cnh_userData');
-        return saved ? JSON.parse(saved) : undefined;
-    });
-
-    const [selectedState] = useState<string | undefined>(() => {
-        if (location.state?.selectedState) {
-            sessionStorage.setItem('cnh_selectedState', location.state.selectedState);
-            return location.state.selectedState;
-        }
-        return sessionStorage.getItem('cnh_selectedState') || undefined;
-    });
-
+    const userData: UserData | undefined = location.state?.userData || JSON.parse(sessionStorage.getItem('cnh_userData') || 'null');
+    const selectedState: string | undefined = location.state?.selectedState || sessionStorage.getItem('cnh_selectedState') || undefined;
+    
     const firstName = userData?.name.split(' ')[0];
 
     const [messages, setMessages] = useState<Message[]>([]);
@@ -213,6 +199,7 @@ const CategorySelectionPage: React.FC = () => {
 
     useEffect(() => {
         if (!userData || !selectedState) {
+            console.error("CategorySelectionPage: Dados de usuário ou estado não encontrados. Redirecionando para o login.", { userData, selectedState });
             navigate('/login');
         } else {
             addMessage('bot', "Para dar continuidade ao seu cadastro no Programa CNH do Brasil, informamos que é necessário selecionar a categoria de CNH pretendida.");

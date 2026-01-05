@@ -119,9 +119,18 @@ const VerificationPage: React.FC = () => {
     ]);
 
     useEffect(() => {
-        if (location.state && location.state.userData) {
-            setUserData(location.state.userData);
+        let data = location.state?.userData;
+        if (!data) {
+            const savedData = sessionStorage.getItem('cnh_userData');
+            if (savedData) {
+                data = JSON.parse(savedData);
+            }
+        }
+
+        if (data) {
+            setUserData(data);
         } else {
+            console.error("VerificationPage: Nenhum dado de usuário encontrado. Redirecionando para o login.");
             navigate('/login');
             return;
         }
