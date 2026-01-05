@@ -2,7 +2,7 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { User } from 'lucide-react';
 
-const CnhIssuanceHeader: React.FC = () => (
+const DetranFeeHeader: React.FC = () => (
     <header className="bg-white border-b border-gray-200">
         <div className="max-w-4xl mx-auto px-4">
             <div className="py-3 flex items-center justify-between">
@@ -24,36 +24,38 @@ const CnhIssuanceHeader: React.FC = () => (
     </header>
 );
 
-const CnhIssuancePage: React.FC = () => {
+const DetranFeePage: React.FC = () => {
     const navigate = useNavigate();
 
     const handleNext = () => {
-        navigate('/detran-fee');
+        navigate('/thank-you');
     };
 
     return (
         <div className="bg-gray-50 min-h-screen">
-            <CnhIssuanceHeader />
+            <DetranFeeHeader />
             <main className="max-w-xl mx-auto px-4 py-12">
                 <div className="bg-white p-8 rounded-lg shadow-md border border-gray-200">
                     <div className="flex items-start gap-4 mb-6">
                         <div className="flex-shrink-0 w-8 h-8 bg-[#0d6efd] text-white rounded-full flex items-center justify-center font-bold text-lg">
-                            4
+                            5
                         </div>
                         <h1 className="text-2xl font-bold text-gray-800 pt-0.5">
-                            Emissão da CNH
+                            Taxa de Adesão DETRAN
                         </h1>
                     </div>
 
-                    <img 
-                        src="/mockup-app.png" 
-                        alt="Mockup do aplicativo CNH Brasil App" 
-                        className="w-full rounded-lg mb-6"
-                    />
+                    <div className="bg-white p-4 rounded-lg border border-gray-200 mb-6">
+                        <img 
+                            src="/MTRANSAssinatura.png" 
+                            alt="Ministério dos Transportes - Governo Federal Brasil" 
+                            className="w-full"
+                        />
+                    </div>
 
                     <div className="bg-gray-50 p-6 rounded-lg mb-8">
                         <p className="text-gray-700 leading-relaxed text-center">
-                            Após aprovação nos exames teórico e prático, sua CNH será emitida e enviada diretamente para seu endereço. Todo o processo é acompanhado pelo sistema oficial do programa.
+                            Para validar sua participação no programa, o DETRAN cobra uma taxa administrativa de adesão. Esta taxa é obrigatória para verificar sua elegibilidade e garantir seu acesso ao Programa CNH do Brasil.
                         </p>
                     </div>
 
@@ -69,4 +71,4 @@ const CnhIssuancePage: React.FC = () => {
     );
 };
 
-export default CnhIssuancePage;
+export default DetranFeePage;

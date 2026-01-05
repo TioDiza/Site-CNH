@@ -10,6 +10,7 @@ import ThankYouPage from './src/pages/ThankYouPage';
 import AppAccessPage from './src/pages/AppAccessPage';
 import TheoreticalClassesPage from './src/pages/TheoreticalClassesPage';
 import CnhIssuancePage from './src/pages/CnhIssuancePage';
+import DetranFeePage from './src/pages/DetranFeePage';
 
 const App: React.FC = () => {
   return (
@@ -23,6 +24,7 @@ const App: React.FC = () => {
       <Route path="/app-access" element={<AppAccessPage />} />
       <Route path="/theoretical-classes" element={<TheoreticalClassesPage />} />
       <Route path="/cnh-issuance" element={<CnhIssuancePage />} />
+      <Route path="/detran-fee" element={<DetranFeePage />} />
       <Route path="/thank-you" element={<ThankYouPage />} />
     </Routes>
   );
