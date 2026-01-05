@@ -1,8 +1,12 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { CheckCircle, User } from 'lucide-react';
 
-const ThankYouHeader: React.FC = () => (
+interface UserData {
+    name: string;
+}
+
+const ThankYouHeader: React.FC<{ userName?: string }> = ({ userName }) => (
     <header className="bg-white border-b border-gray-200">
         <div className="max-w-4xl mx-auto px-4">
             <div className="py-3 flex items-center justify-between">
@@ -16,7 +20,7 @@ const ThankYouHeader: React.FC = () => (
                 <div className="flex items-center gap-2">
                     <button className="flex items-center gap-2 bg-[#004381] text-white px-4 py-1.5 rounded-full text-sm font-medium hover:bg-blue-900 transition-colors">
                         <User size={18} />
-                        <span>Entrar</span>
+                        <span>{userName || 'Entrar'}</span>
                     </button>
                 </div>
             </div>
@@ -25,9 +29,13 @@ const ThankYouHeader: React.FC = () => (
 );
 
 const ThankYouPage: React.FC = () => {
+    const location = useLocation();
+    const userData = location.state?.userData as UserData | undefined;
+    const firstName = userData?.name.split(' ')[0];
+
     return (
         <div className="bg-gray-50 min-h-screen">
-            <ThankYouHeader />
+            <ThankYouHeader userName={firstName} />
             <main className="max-w-xl mx-auto px-4 py-12">
                 <div className="bg-white p-8 rounded-lg shadow-md border border-gray-200 text-center">
                     <CheckCircle className="text-green-500 w-16 h-16 mx-auto mb-6" />
