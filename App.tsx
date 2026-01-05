@@ -15,13 +15,17 @@ import VerificationPage from './src/pages/VerificationPage';
 import CategorySelectionPage from './src/pages/CategorySelectionPage';
 import PaymentPage from './src/pages/PaymentPage';
 import AdminDashboardPage from './src/pages/AdminDashboardPage';
+import AdminLoginPage from './src/pages/AdminLoginPage';
+import AdminProtectedRoute from './src/components/AdminProtectedRoute';
+import { AuthProvider } from './src/contexts/AuthContext';
 import ScrollToTop from './src/components/ScrollToTop';
 
 const App: React.FC = () => {
   return (
-    <>
+    <AuthProvider>
       <ScrollToTop />
       <Routes>
+        {/* Public Routes */}
         <Route path="/" element={<HomePage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/confirmation" element={<ConfirmationPage />} />
@@ -36,9 +40,14 @@ const App: React.FC = () => {
         <Route path="/category-selection" element={<CategorySelectionPage />} />
         <Route path="/thank-you" element={<ThankYouPage />} />
         <Route path="/payment" element={<PaymentPage />} />
-        <Route path="/admin/dashboard" element={<AdminDashboardPage />} />
+
+        {/* Admin Routes */}
+        <Route path="/admin/login" element={<AdminLoginPage />} />
+        <Route element={<AdminProtectedRoute />}>
+          <Route path="/admin/dashboard" element={<AdminDashboardPage />} />
+        </Route>
       </Routes>
-    </>
+    </AuthProvider>
   );
 };
 
