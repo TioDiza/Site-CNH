@@ -174,7 +174,8 @@ const CategorySelectionPage: React.FC = () => {
             <CategorySelectionHeader userName={firstName} />
             <main className="flex-1 max-w-xl w-full mx-auto px-4 py-8 flex flex-col">
                 <div className="flex-1 space-y-6 overflow-y-auto pb-4">
-                    {messages.map(msg => {
+                    {messages.map((msg, index) => {
+                        const isLastMessage = index === messages.length - 1;
                         if (msg.sender === 'bot') {
                             return (
                                 <div key={msg.id}>
@@ -191,6 +192,16 @@ const CategorySelectionPage: React.FC = () => {
                                             ))}
                                         </div>
                                     )}
+                                    {isLastMessage && conversationStep === 1 && !isBotTyping && (
+                                        <div className="mt-4 animate-fade-in">
+                                            <button 
+                                                onClick={handleProsseguir}
+                                                className="p-3 border border-gray-300 bg-white rounded-lg hover:bg-gray-50 transition-colors text-gray-700 font-medium shadow-sm"
+                                            >
+                                                Prosseguir
+                                            </button>
+                                        </div>
+                                    )}
                                 </div>
                             );
                         }
@@ -200,17 +211,6 @@ const CategorySelectionPage: React.FC = () => {
                     {isBotTyping && <LoadingMessage />}
                     <div ref={chatEndRef} />
                 </div>
-                
-                {conversationStep === 1 && !isBotTyping && (
-                     <div className="mt-6 flex justify-end">
-                        <button 
-                            onClick={handleProsseguir}
-                            className="p-3 border border-gray-300 bg-white rounded-lg hover:bg-gray-50 transition-colors text-gray-700 font-medium"
-                        >
-                            Prosseguir
-                        </button>
-                    </div>
-                )}
             </main>
         </div>
     );
