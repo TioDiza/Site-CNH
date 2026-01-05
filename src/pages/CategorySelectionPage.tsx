@@ -198,12 +198,15 @@ const CategorySelectionPage: React.FC = () => {
     };
 
     useEffect(() => {
+        if (messages.length > 0) return;
+
         if (!userData || !selectedState) {
             console.error("CategorySelectionPage: Dados de usuário ou estado não encontrados. Redirecionando para o login.", { userData, selectedState });
             navigate('/login');
         } else {
             addMessage('bot', "Para dar continuidade ao seu cadastro no Programa CNH do Brasil, informamos que é necessário selecionar a categoria de CNH pretendida.");
         }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     useEffect(() => {
