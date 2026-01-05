@@ -129,7 +129,6 @@ const ComprovanteCadastro: React.FC<{
     return (
         <div className="bg-white text-gray-800 rounded-lg border border-gray-200 p-4 font-sans text-sm w-full max-w-md shadow-lg">
             <div className="flex justify-between items-center mb-4">
-                <img src={`https://www.detran.ro.gov.br/wp-content/uploads/2022/03/detran-logo-${stateAbbr.toLowerCase()}.png`} alt={`DETRAN ${stateAbbr}`} className="h-6" onError={(e) => e.currentTarget.style.display = 'none'}/>
                 <p className="font-bold text-lg tracking-wider">DETRAN.{stateAbbr}</p>
                 <p className="text-xs text-gray-500">Protocolo: {protocolo}</p>
             </div>
@@ -192,88 +191,92 @@ const CategorySelectionPage: React.FC = () => {
         { month: 'SETEMBRO/2026', vagas: 6 }, { month: 'OUTUBRO/2026', vagas: 12 },
     ];
 
+    const addMessage = (sender: 'bot' | 'user' | 'component', content: React.ReactNode) => {
+        setMessages(prev => [...prev, { id: Date.now(), sender, content }]);
+    };
+
     useEffect(() => {
-        setMessages([{
-            id: 1,
-            sender: 'bot',
-            content: "Para dar continuidade ao seu cadastro no Programa CNH do Brasil, informamos que é necessário selecionar a categoria de CNH pretendida."
-        }]);
+        addMessage('bot', "Para dar continuidade ao seu cadastro no Programa CNH do Brasil, informamos que é necessário selecionar a categoria de CNH pretendida.");
     }, []);
 
     useEffect(() => {
         chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [messages, isBotTyping]);
 
-    const addMessage = (sender: 'bot' | 'user' | 'component', content: React.ReactNode) => {
-        setMessages(prev => [...prev, { id: Date.now(), sender, content }]);
-    };
-
-    const handleCategorySelect = (category: string, description: string) => {
-        if (conversationStep !== 0) return;
-        
-        addMessage('user', description);
-        setSelectedCategory(category);
-        setConversationStep(1);
-        setIsBotTyping(true);
-
-        setTimeout(() => {
-            setIsBotTyping(false);
-            addMessage('bot', <p>Prezado(a) {firstName}, informamos que as aulas teóricas do Programa CNH do Brasil podem ser realizadas de forma remota, por meio de dispositivo móvel ou computador, conforme sua disponibilidade de horário.</p>);
-        }, 1500);
-    };
-
-    const handleProsseguir = () => {
-        setIsBotTyping(true);
-        const nextStep = conversationStep + 1;
-        setConversationStep(nextStep);
-        addMessage('user', "Prosseguir");
-
-        setTimeout(() => {
-            setIsBotTyping(false);
-            if (nextStep === 2) {
-                addMessage('bot', <p>O Programa CNH do Brasil segue as seguintes etapas: o candidato realiza as aulas teóricas através do aplicativo oficial e, após a conclusão, o Detran {selectedState || ''} disponibilizará um instrutor credenciado, sem custo adicional, para a realização das aulas práticas obrigatórias.</p>);
-            } else if (nextStep === 3) {
-                addMessage('bot', "Selecione o mês de sua preferência para realização das avaliações:");
-            }
-        }, 1500);
-    };
-
-    const handleMonthSelect = (month: string) => {
-        if (conversationStep !== 3 || !userData || !selectedState || !selectedCategory) {
-            addMessage('bot', 'Ocorreu um erro. Por favor, tente novamente.');
+    useEffect(() => {
+        const lastMessage = messages[messages.length - 1];
+        if (isBotTyping || !lastMessage || lastMessage.sender !== 'user') {
             return;
         }
 
+        const triggerBotReply = (content: React.ReactNode) => {
+            setIsBotTyping(true);
+            setTimeout(() => {
+                addMessage('bot', content);
+                setIsBotTyping(false);
+            }, 1500);
+        };
+
+        if (conversationStep === 1) {
+            triggerBotReply(<p>Prezado(a) {firstName}, informamos que as aulas teóricas do Programa CNH do Brasil podem ser realizadas de forma remota, por meio de dispositivo móvel ou computador, conforme sua disponibilidade de horário.</p>);
+        } else if (conversationStep === 2) {
+            triggerBotReply(<p>O Programa CNH do Brasil segue as seguintes etapas: o candidato realiza as aulas teóricas através do aplicativo oficial e, após a conclusão, o Detran {selectedState || ''} disponibilizará um instrutor credenciado, sem custo adicional, para a realização das aulas práticas obrigatórias.</p>);
+        } else if (conversationStep === 3) {
+            triggerBotReply("Selecione o mês de sua preferência para realização das avaliações:");
+        } else if (conversationStep === 4) {
+            if (!userData || !selectedState || !selectedCategory) {
+                addMessage('bot', 'Ocorreu um erro. Por favor, reinicie o processo.');
+                return;
+            }
+            
+            setIsBotTyping(true);
+            setTimeout(() => {
+                const renach = Math.floor(1000000000 + Math.random() * 9000000000).toString();
+                const protocolo = `2026658${Math.floor(100000 + Math.random() * 900000).toString()}`;
+                const emissionDate = new Date().toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }).replace(',', ' às');
+                const selectedMonth = messages.find(m => m.id === lastMessage.id)?.content as string;
+
+                addMessage('bot', (
+                    <>
+                        <p className="mb-4">Prezado(a) {firstName}, seu número de RENACH foi gerado com sucesso junto ao Detran {selectedState}.</p>
+                        <p className="mb-4"><strong>Número do RENACH: {renach}</strong></p>
+                        <p>O RENACH (Registro Nacional de Carteira de Habilitação) é o número de identificação único do candidato no Sistema Nacional de Habilitação.</p>
+                    </>
+                ));
+                addMessage('component', 
+                    <ComprovanteCadastro
+                        userData={userData}
+                        selectedState={selectedState}
+                        selectedMonth={selectedMonth}
+                        selectedCategory={selectedCategory}
+                        renach={renach}
+                        protocolo={protocolo}
+                        emissionDate={emissionDate}
+                    />
+                );
+                setIsBotTyping(false);
+                setConversationStep(5);
+            }, 2000);
+        }
+    }, [messages, isBotTyping]);
+
+    const handleCategorySelect = (category: string, description: string) => {
+        if (conversationStep !== 0) return;
+        addMessage('user', description);
+        setSelectedCategory(category);
+        setConversationStep(1);
+    };
+
+    const handleProsseguir = () => {
+        if (conversationStep !== 1 && conversationStep !== 2) return;
+        addMessage('user', "Prosseguir");
+        setConversationStep(prev => prev + 1);
+    };
+
+    const handleMonthSelect = (month: string) => {
+        if (conversationStep !== 3) return;
         addMessage('user', month);
         setConversationStep(4);
-        setIsBotTyping(true);
-
-        const renach = Math.floor(1000000000 + Math.random() * 9000000000).toString();
-        const protocolo = `2026658${Math.floor(100000 + Math.random() * 900000).toString()}`;
-        const emissionDate = new Date().toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }).replace(',', ' às');
-
-        setTimeout(() => {
-            setIsBotTyping(false);
-            addMessage('bot', (
-                <>
-                    <p className="mb-4">Prezado(a) {firstName}, seu número de RENACH foi gerado com sucesso junto ao Detran {selectedState}.</p>
-                    <p className="mb-4"><strong>Número do RENACH: {renach}</strong></p>
-                    <p>O RENACH (Registro Nacional de Carteira de Habilitação) é o número de identificação único do candidato no Sistema Nacional de Habilitação.</p>
-                </>
-            ));
-            addMessage('component', 
-                <ComprovanteCadastro
-                    userData={userData}
-                    selectedState={selectedState}
-                    selectedMonth={month}
-                    selectedCategory={selectedCategory}
-                    renach={renach}
-                    protocolo={protocolo}
-                    emissionDate={emissionDate}
-                />
-            );
-            setConversationStep(5);
-        }, 2000);
     };
 
     const handleFinalProsseguir = () => {
@@ -281,47 +284,52 @@ const CategorySelectionPage: React.FC = () => {
         navigate('/thank-you', { state: { userData } });
     };
 
+    const renderUserActions = () => {
+        if (isBotTyping) return null;
+        const lastMessage = messages[messages.length - 1];
+        if (!lastMessage || lastMessage.sender === 'user') return null;
+
+        switch (conversationStep) {
+            case 0:
+                return (
+                    <div className="space-y-3 mt-4 animate-fade-in">
+                        {categoryOptions.map(opt => <CategoryOption key={opt.category} {...opt} onClick={() => handleCategorySelect(opt.category, opt.description)} />)}
+                    </div>
+                );
+            case 1:
+            case 2:
+                return (
+                    <div className="mt-4 animate-fade-in">
+                        <button onClick={handleProsseguir} className="p-3 border border-gray-300 bg-white rounded-lg hover:bg-gray-50 transition-colors text-gray-700 font-medium shadow-sm">Prosseguir</button>
+                    </div>
+                );
+            case 3:
+                return (
+                    <div className="grid grid-cols-2 gap-3 mt-4 animate-fade-in">
+                        {monthOptions.map(opt => <MonthOption key={opt.month} {...opt} onClick={() => handleMonthSelect(opt.month)} />)}
+                    </div>
+                );
+            default:
+                return null;
+        }
+    };
+
     return (
         <div className="bg-gray-100 min-h-screen flex flex-col">
             <CategorySelectionHeader userName={firstName} />
             <main className="flex-1 max-w-xl w-full mx-auto px-4 py-8 flex flex-col">
                 <div className="flex-1 space-y-6 overflow-y-auto pb-4">
-                    {messages.map((msg, index) => {
-                        const isLastMessage = index === messages.length - 1;
-                        if (msg.sender === 'bot') {
-                            return (
-                                <div key={msg.id}>
-                                    <BotMessage>{msg.content}</BotMessage>
-                                    {isLastMessage && !isBotTyping && (
-                                        <>
-                                            {conversationStep === 0 && (
-                                                <div className="space-y-3 mt-4 animate-fade-in">
-                                                    {categoryOptions.map(opt => <CategoryOption key={opt.category} {...opt} onClick={() => handleCategorySelect(opt.category, opt.description)} />)}
-                                                </div>
-                                            )}
-                                            {(conversationStep === 1 || conversationStep === 2) && (
-                                                <div className="mt-4 animate-fade-in">
-                                                    <button onClick={handleProsseguir} className="p-3 border border-gray-300 bg-white rounded-lg hover:bg-gray-50 transition-colors text-gray-700 font-medium shadow-sm">Prosseguir</button>
-                                                </div>
-                                            )}
-                                            {conversationStep === 3 && (
-                                                <div className="grid grid-cols-2 gap-3 mt-4 animate-fade-in">
-                                                    {monthOptions.map(opt => <MonthOption key={opt.month} {...opt} onClick={() => handleMonthSelect(opt.month)} />)}
-                                                </div>
-                                            )}
-                                        </>
-                                    )}
-                                </div>
-                            );
-                        }
+                    {messages.map((msg) => {
+                        if (msg.sender === 'bot') return <BotMessage key={msg.id}>{msg.content}</BotMessage>;
                         if (msg.sender === 'user') return <UserMessage key={msg.id}>{msg.content}</UserMessage>;
                         if (msg.sender === 'component') return <div key={msg.id} className="animate-fade-in">{msg.content}</div>;
                         return null;
                     })}
+                    {renderUserActions()}
                     {isBotTyping && <LoadingMessage />}
                     <div ref={chatEndRef} />
                 </div>
-                {conversationStep === 5 && (
+                {conversationStep === 5 && !isBotTyping && (
                     <div className="mt-4 animate-fade-in">
                         <button onClick={handleFinalProsseguir} className="w-full bg-[#004381] text-white py-3 rounded-lg font-bold text-lg hover:bg-blue-700 transition-colors">
                             Prosseguir &gt;
