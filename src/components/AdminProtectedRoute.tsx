@@ -8,7 +8,7 @@ const AdminProtectedRoute: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-gray-100">
         <Loader2 className="w-12 h-12 animate-spin text-blue-600" />
       </div>
     );

@@ -4,7 +4,6 @@ import { Session, User } from '@supabase/supabase-js';
 
 interface Profile {
   role: string;
-  // Add other profile fields if needed
 }
 
 interface AuthContextType {
@@ -21,42 +20,49 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
-  const [loading, setLoading] = useState(true); // Start loading initially
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const { data: authListener } = supabase.auth.onAuthStateChange(async (event, currentSession) => {
-      // For major auth events that require fetching data, set loading to true
-      if (event === 'SIGNED_IN') {
-        setLoading(true);
-      }
-
+    const getSessionAndProfile = async () => {
+      const { data: { session: currentSession } } = await supabase.auth.getSession();
       setSession(currentSession);
       const currentUser = currentSession?.user ?? null;
       setUser(currentUser);
-      
-      // Always reset profile before fetching
-      setProfile(null);
 
       if (currentUser) {
-        const { data: profileData, error } = await supabase
+        const { data: profileData, error: profileError } = await supabase
           .from('profiles')
           .select('role')
           .eq('id', currentUser.id)
           .single();
-
-        if (error) {
-          console.error('Error fetching profile on auth change:', error);
+        
+        if (profileError) {
+          console.error('Error fetching profile:', profileError);
+          setProfile(null);
         } else {
           setProfile(profileData);
         }
+      } else {
+        setProfile(null);
       }
-      
-      // We are done loading after the initial session is processed or after a sign-in/out event.
-      // This prevents the loader from showing on token refreshes.
-      if (event === 'INITIAL_SESSION' || event === 'SIGNED_IN' || event === 'SIGNED_OUT') {
-        setLoading(false);
+      setLoading(false);
+    };
+
+    getSessionAndProfile();
+
+    const { data: authListener } = supabase.auth.onAuthStateChange(
+      (_event, newSession) => {
+        setSession(newSession);
+        setUser(newSession?.user ?? null);
+        // Re-fetch profile when auth state changes
+        if (newSession?.user) {
+            getSessionAndProfile();
+        } else {
+            setProfile(null);
+            setLoading(false);
+        }
       }
-    });
+    );
 
     return () => {
       authListener.subscription.unsubscribe();
@@ -64,18 +70,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   }, []);
 
   const signOut = async () => {
-    setLoading(true);
     await supabase.auth.signOut();
-    // onAuthStateChange will handle setting loading to false
   };
 
-  const value = {
-    session,
-    user,
-    profile,
-    loading,
-    signOut,
-  };
+  const value = { session, user, profile, loading, signOut };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
