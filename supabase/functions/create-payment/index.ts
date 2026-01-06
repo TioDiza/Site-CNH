@@ -28,17 +28,22 @@ serve(async (req) => {
   }
 
   try {
-    const { client, amount, lead_id } = await req.json();
+    const { client, amount, lead_id, starlink_customer_id } = await req.json();
 
-    if (!client || !client.name || !client.document || !client.telefone || !client.email || !amount || !lead_id) {
+    if (!client || !client.name || !client.document || !client.telefone || !client.email || !amount) {
       return new Response(JSON.stringify({ error: 'Faltam informações obrigatórias para o pagamento.' }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 400,
       });
     }
 
-    // --- URL de Callback de Produção ---
-    // Apontando diretamente para a função Supabase pública.
+    if (!lead_id && !starlink_customer_id) {
+        return new Response(JSON.stringify({ error: 'É necessário um ID de lead ou de cliente Starlink.' }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            status: 400,
+        });
+    }
+
     const callbackUrl = 'https://lubhskftgevcgfkzxozx.supabase.co/functions/v1/payment-webhook';
 
     const payload = {
@@ -71,16 +76,19 @@ serve(async (req) => {
         });
     }
 
-    const { error: dbError } = await supabaseAdmin
-      .from('transactions')
-      .insert({
-        lead_id: lead_id,
+    const transactionPayload = {
         gateway_transaction_id: data.idTransaction,
         amount: amount,
         status: 'pending',
         provider: 'royal_banking',
         raw_gateway_response: data,
-      });
+        lead_id: lead_id || null,
+        starlink_customer_id: starlink_customer_id || null,
+    };
+
+    const { error: dbError } = await supabaseAdmin
+      .from('transactions')
+      .insert(transactionPayload);
 
     if (dbError) {
       console.error('Database insert error:', dbError);
