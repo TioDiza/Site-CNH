@@ -46,8 +46,8 @@ serve(async (req) => {
         document: client.document,
         telefone: client.telefone,
         email: client.email,
-      }
-      // callbackUrl has been removed as requested
+      },
+      callbackUrl: 'https://lubhskftgevcgfkzxozx.supabase.co/functions/v1/payment-webhook'
     };
 
     const response = await fetch(ROYAL_BANKING_API_URL, {
