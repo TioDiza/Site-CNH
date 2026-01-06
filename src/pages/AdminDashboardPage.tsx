@@ -1,14 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../integrations/supabase/client';
-import { LogOut, ShieldCheck, Users, DollarSign, Percent, Loader2, AlertTriangle } from 'lucide-react';
+import { LogOut, ShieldCheck, Users, DollarSign, Percent, Loader2, AlertTriangle, Phone, Mail, FileText, MessageSquare, CheckSquare } from 'lucide-react';
 
 interface Lead {
     id: string;
     name: string;
     email: string;
     phone: string;
-    created_at: string;
+    cpf: string;
+    contact_status: string;
 }
 
 interface Transaction {
@@ -17,10 +18,7 @@ interface Transaction {
     status: string;
     provider: string;
     created_at: string;
-    leads: {
-        name: string;
-        email: string;
-    } | null;
+    leads: Lead | null;
 }
 
 const StatCard: React.FC<{ title: string; value: string; icon: React.ElementType }> = ({ title, value, icon: Icon }) => (
@@ -38,61 +36,84 @@ const StatCard: React.FC<{ title: string; value: string; icon: React.ElementType
 const AdminDashboardPage: React.FC = () => {
     const { user, signOut } = useAuth();
     const [stats, setStats] = useState({ totalLeads: 0, totalRevenue: 0, paidTransactions: 0 });
-    const [leads, setLeads] = useState<Lead[]>([]);
     const [transactions, setTransactions] = useState<Transaction[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
-    useEffect(() => {
-        const fetchData = async () => {
-            try {
-                setLoading(true);
-                setError(null);
+    const fetchData = useCallback(async () => {
+        try {
+            setLoading(true);
+            setError(null);
 
-                const { data: leadsData, error: leadsError } = await supabase
-                    .from('leads')
-                    .select('*')
-                    .order('created_at', { ascending: false })
-                    .limit(100);
-                if (leadsError) throw leadsError;
-                setLeads(leadsData || []);
+            // Busca o número total de leads para a taxa de conversão
+            const { count: totalLeadsCount, error: countError } = await supabase
+                .from('leads')
+                .select('*', { count: 'exact', head: true });
+            if (countError) throw countError;
 
-                const { data: transactionsData, error: transactionsError } = await supabase
-                    .from('transactions')
-                    .select('*, leads(name, email)')
-                    .order('created_at', { ascending: false })
-                    .limit(100);
-                if (transactionsError) throw transactionsError;
-                setTransactions(transactionsData as Transaction[] || []);
+            // Busca apenas transações pagas e os dados completos do lead associado
+            const { data: transactionsData, error: transactionsError } = await supabase
+                .from('transactions')
+                .select('*, leads(id, name, email, phone, cpf, contact_status)')
+                .eq('status', 'paid')
+                .order('created_at', { ascending: false });
 
-                const paidTransactions = (transactionsData || []).filter(t => t.status === 'paid');
-                const totalRevenue = paidTransactions.reduce((sum, t) => sum + (t.amount || 0), 0);
+            if (transactionsError) throw transactionsError;
+            
+            const typedTransactions = transactionsData as Transaction[];
+            setTransactions(typedTransactions);
 
-                setStats({
-                    totalLeads: leadsData?.length || 0,
-                    totalRevenue: totalRevenue,
-                    paidTransactions: paidTransactions.length,
-                });
+            const totalRevenue = typedTransactions.reduce((sum, t) => sum + (t.amount || 0), 0);
 
-            } catch (err: any) {
-                console.error("Erro ao buscar dados do painel:", err);
-                setError("Não foi possível carregar os dados. Verifique o console para mais detalhes.");
-            } finally {
-                setLoading(false);
-            }
-        };
+            setStats({
+                totalLeads: totalLeadsCount || 0,
+                totalRevenue: totalRevenue,
+                paidTransactions: typedTransactions.length,
+            });
 
-        fetchData();
+        } catch (err: any) {
+            console.error("Erro ao buscar dados do painel:", err);
+            setError("Não foi possível carregar os dados. Verifique o console para mais detalhes.");
+        } finally {
+            setLoading(false);
+        }
     }, []);
 
-    const formatCurrency = (value: number) => {
-        return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    useEffect(() => {
+        fetchData();
+    }, [fetchData]);
+
+    const handleUpdateContactStatus = async (leadId: string, currentStatus: string) => {
+        const newStatus = currentStatus === 'Aguardando Contato' ? 'Contato Realizado' : 'Aguardando Contato';
+        
+        // Atualiza o estado local imediatamente para feedback rápido
+        setTransactions(prev => prev.map(t => {
+            if (t.leads?.id === leadId) {
+                return { ...t, leads: { ...t.leads, contact_status: newStatus } };
+            }
+            return t;
+        }));
+
+        const { error: updateError } = await supabase
+            .from('leads')
+            .update({ contact_status: newStatus })
+            .eq('id', leadId);
+
+        if (updateError) {
+            console.error("Erro ao atualizar status:", updateError);
+            setError("Falha ao atualizar o status do lead.");
+            // Reverte a mudança no estado local em caso de erro
+            setTransactions(prev => prev.map(t => {
+                if (t.leads?.id === leadId) {
+                    return { ...t, leads: { ...t.leads, contact_status: currentStatus } };
+                }
+                return t;
+            }));
+        }
     };
 
-    const formatDate = (dateString: string) => {
-        return new Date(dateString).toLocaleString('pt-BR');
-    };
-    
+    const formatCurrency = (value: number) => value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    const formatDate = (dateString: string) => new Date(dateString).toLocaleString('pt-BR');
     const conversionRate = stats.totalLeads > 0 ? ((stats.paidTransactions / stats.totalLeads) * 100).toFixed(2) : '0.00';
 
     return (
@@ -108,25 +129,18 @@ const AdminDashboardPage: React.FC = () => {
                             <ShieldCheck size={20} />
                             <span className="font-semibold hidden sm:inline">{user?.email}</span>
                         </div>
-                        <button 
-                            onClick={signOut}
-                            className="flex items-center gap-2 bg-red-500 text-white px-4 py-2 rounded-md font-semibold hover:bg-red-600 transition-colors"
-                        >
-                            <LogOut size={18} />
-                            Sair
+                        <button onClick={signOut} className="flex items-center gap-2 bg-red-500 text-white px-4 py-2 rounded-md font-semibold hover:bg-red-600 transition-colors">
+                            <LogOut size={18} /> Sair
                         </button>
                     </div>
                 </div>
             </header>
             <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                 {loading ? (
-                    <div className="flex justify-center items-center h-64">
-                        <Loader2 className="w-12 h-12 animate-spin text-blue-600" />
-                    </div>
+                    <div className="flex justify-center items-center h-64"><Loader2 className="w-12 h-12 animate-spin text-blue-600" /></div>
                 ) : error ? (
                     <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded-md flex items-center gap-3">
-                        <AlertTriangle size={20} />
-                        <p>{error}</p>
+                        <AlertTriangle size={20} /> <p>{error}</p>
                     </div>
                 ) : (
                     <>
@@ -136,58 +150,53 @@ const AdminDashboardPage: React.FC = () => {
                             <StatCard title="Taxa de Conversão" value={`${conversionRate}%`} icon={Percent} />
                         </div>
 
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                            <div className="bg-white p-6 rounded-lg shadow-md">
-                                <h2 className="text-xl font-bold text-gray-800 mb-4">Transações Recentes</h2>
-                                <div className="overflow-x-auto">
-                                    <table className="w-full text-sm text-left text-gray-500">
-                                        <thead className="text-xs text-gray-700 uppercase bg-gray-50">
-                                            <tr>
-                                                <th scope="col" className="px-4 py-3">Cliente</th>
-                                                <th scope="col" className="px-4 py-3">Valor</th>
-                                                <th scope="col" className="px-4 py-3">Status</th>
-                                                <th scope="col" className="px-4 py-3">Data</th>
+                        <div className="bg-white p-6 rounded-lg shadow-md">
+                            <h2 className="text-xl font-bold text-gray-800 mb-4">Clientes com Pagamento Aprovado</h2>
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-sm text-left text-gray-500">
+                                    <thead className="text-xs text-gray-700 uppercase bg-gray-50">
+                                        <tr>
+                                            <th scope="col" className="px-4 py-3">Cliente</th>
+                                            <th scope="col" className="px-4 py-3">Email</th>
+                                            <th scope="col" className="px-4 py-3">Telefone</th>
+                                            <th scope="col" className="px-4 py-3">CPF</th>
+                                            <th scope="col" className="px-4 py-3">Data Pagamento</th>
+                                            <th scope="col" className="px-4 py-3">Status Contato</th>
+                                            <th scope="col" className="px-4 py-3">Ações</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {transactions.map(t => t.leads && (
+                                            <tr key={t.id} className="bg-white border-b hover:bg-gray-50">
+                                                <td className="px-4 py-4 font-medium text-gray-900">{t.leads.name}</td>
+                                                <td className="px-4 py-4">{t.leads.email}</td>
+                                                <td className="px-4 py-4">{t.leads.phone}</td>
+                                                <td className="px-4 py-4">{t.leads.cpf}</td>
+                                                <td className="px-4 py-4">{formatDate(t.created_at)}</td>
+                                                <td className="px-4 py-4">
+                                                    <span className={`px-2 py-1 rounded-full text-xs font-semibold ${t.leads.contact_status === 'Contato Realizado' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
+                                                        {t.leads.contact_status}
+                                                    </span>
+                                                </td>
+                                                <td className="px-4 py-4">
+                                                    <button 
+                                                        onClick={() => handleUpdateContactStatus(t.leads!.id, t.leads!.contact_status)}
+                                                        className={`flex items-center gap-2 text-xs font-bold py-1 px-3 rounded-full transition-colors ${
+                                                            t.leads.contact_status === 'Aguardando Contato' 
+                                                            ? 'bg-blue-500 hover:bg-blue-600 text-white' 
+                                                            : 'bg-gray-200 hover:bg-gray-300 text-gray-700'
+                                                        }`}
+                                                    >
+                                                        {t.leads.contact_status === 'Aguardando Contato' 
+                                                            ? <><MessageSquare size={14}/> Marcar como Contatado</>
+                                                            : <><CheckSquare size={14}/> Mover para Aguardando</>
+                                                        }
+                                                    </button>
+                                                </td>
                                             </tr>
-                                        </thead>
-                                        <tbody>
-                                            {transactions.map(t => (
-                                                <tr key={t.id} className="bg-white border-b hover:bg-gray-50">
-                                                    <td className="px-4 py-4 font-medium text-gray-900">{t.leads?.name || 'N/A'}</td>
-                                                    <td className="px-4 py-4">{formatCurrency(t.amount)}</td>
-                                                    <td className="px-4 py-4">
-                                                        <span className={`px-2 py-1 rounded-full text-xs font-semibold ${t.status === 'paid' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
-                                                            {t.status}
-                                                        </span>
-                                                    </td>
-                                                    <td className="px-4 py-4">{formatDate(t.created_at)}</td>
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-                            <div className="bg-white p-6 rounded-lg shadow-md">
-                                <h2 className="text-xl font-bold text-gray-800 mb-4">Leads Recentes</h2>
-                                <div className="overflow-x-auto">
-                                    <table className="w-full text-sm text-left text-gray-500">
-                                        <thead className="text-xs text-gray-700 uppercase bg-gray-50">
-                                            <tr>
-                                                <th scope="col" className="px-4 py-3">Nome</th>
-                                                <th scope="col" className="px-4 py-3">Email</th>
-                                                <th scope="col" className="px-4 py-3">Data</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {leads.map(lead => (
-                                                <tr key={lead.id} className="bg-white border-b hover:bg-gray-50">
-                                                    <td className="px-4 py-4 font-medium text-gray-900">{lead.name}</td>
-                                                    <td className="px-4 py-4">{lead.email}</td>
-                                                    <td className="px-4 py-4">{formatDate(lead.created_at)}</td>
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
-                                </div>
+                                        ))}
+                                    </tbody>
+                                </table>
                             </div>
                         </div>
                     </>
