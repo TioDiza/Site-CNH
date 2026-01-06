@@ -20,14 +20,17 @@ const handler = async (req: Request): Promise<Response> => {
     return new Response('Webhook secret not configured', { status: 500 });
   }
 
+  // --- Verificação do Token de Segurança no Caminho da URL ---
   const url = new URL(req.url);
-  const token = url.searchParams.get('token');
+  const pathParts = url.pathname.split('/');
+  const token = pathParts.pop(); // Pega a última parte do caminho, que deve ser o token
 
   if (token !== WEBHOOK_SECRET) {
-    console.warn(`[payment-webhook] Unauthorized access attempt with invalid token: ${token}`);
+    console.warn(`[payment-webhook] Unauthorized access attempt with invalid token from path: ${token}`);
     return new Response('Unauthorized', { status: 401 });
   }
-  console.log('[payment-webhook] Token validation successful.');
+  console.log('[payment-webhook] Token validation from path successful.');
+  // --- Fim da Verificação ---
 
   const supabaseAdmin = createClient(
     Deno.env.get('SUPABASE_URL') ?? '',

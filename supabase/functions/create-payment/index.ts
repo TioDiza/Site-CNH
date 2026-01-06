@@ -15,7 +15,6 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders })
   }
 
-  // Create Supabase client with service_role key
   const supabaseAdmin = createClient(
     Deno.env.get('SUPABASE_URL') ?? '',
     Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
@@ -39,12 +38,12 @@ serve(async (req) => {
       });
     }
 
-    // --- URL de Callback com Token de Segurança ---
+    // --- URL de Callback com Token de Segurança no Caminho ---
     // Para testes locais com ngrok, descomente a linha abaixo e comente a de produção.
     // const baseCallbackUrl = 'https://unindulging-alise-punishingly.ngrok-free.dev/payment-webhook';
     const baseCallbackUrl = 'https://lubhskftgevcgfkzxozx.supabase.co/functions/v1/payment-webhook';
     
-    const callbackUrl = `${baseCallbackUrl}?token=${WEBHOOK_SECRET}`;
+    const callbackUrl = `${baseCallbackUrl}/${WEBHOOK_SECRET}`;
 
     const payload = {
       'api-key': ROYAL_BANKING_API_KEY,
@@ -76,7 +75,6 @@ serve(async (req) => {
         });
     }
 
-    // Save transaction to the database
     const { error: dbError } = await supabaseAdmin
       .from('transactions')
       .insert({
