@@ -26,12 +26,9 @@ const PaymentPage: React.FC = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [isCopied, setIsCopied] = useState(false);
-    const [feeAmount, setFeeAmount] = useState(0);
+    const [feeAmount] = useState(87.90);
 
     useEffect(() => {
-        const randomAmount = Math.round((Math.random() + 1) * 100) / 100;
-        setFeeAmount(randomAmount);
-
         let data: { name: string; cpf: string; leadId: string; email: string; phone: string; } | null = null;
         
         const savedData = sessionStorage.getItem('cnh_userData');
@@ -66,7 +63,7 @@ const PaymentPage: React.FC = () => {
                 };
 
                 const { data: paymentResult, error: functionError } = await supabase.functions.invoke('create-payment', {
-                    body: { client: clientPayload, amount: randomAmount, lead_id: data.leadId },
+                    body: { client: clientPayload, amount: feeAmount, lead_id: data.leadId },
                 });
 
                 if (functionError) throw new Error(functionError.message);
@@ -88,7 +85,7 @@ const PaymentPage: React.FC = () => {
         if (data) {
             generatePayment();
         }
-    }, []);
+    }, [feeAmount]);
 
     // Listener para aguardar a confirmação do pagamento via webhook
     useEffect(() => {
