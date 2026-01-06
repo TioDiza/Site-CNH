@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { User, Loader2, ClipboardCopy, CheckCircle, AlertTriangle, Smartphone, Info } from 'lucide-react';
+import { User, Loader2, ClipboardCopy, CheckCircle, AlertTriangle, Smartphone, Info, ArrowRight } from 'lucide-react';
 import { supabase } from '../integrations/supabase/client';
 
 const PaymentHeader: React.FC<{ userName?: string }> = ({ userName }) => (
@@ -90,23 +90,16 @@ const PaymentPage: React.FC = () => {
         }
     }, []);
 
-    // Efeito para simular o webhook e redirecionar
-    useEffect(() => {
-        if (paymentData) {
-            const timer = setTimeout(() => {
-                navigate('/payment-success');
-            }, 5000); // Redireciona após 5 segundos
-
-            return () => clearTimeout(timer);
-        }
-    }, [paymentData, navigate]);
-
     const handleCopyToClipboard = () => {
         if (paymentData) {
             navigator.clipboard.writeText(paymentData.pixCode);
             setIsCopied(true);
             setTimeout(() => setIsCopied(false), 2000);
         }
+    };
+
+    const handleManualConfirmation = () => {
+        navigate('/payment-success');
     };
 
     const firstName = userData?.name.split(' ')[0];
@@ -168,7 +161,7 @@ const PaymentPage: React.FC = () => {
                             </p>
                             
                             <div className="bg-yellow-100 text-yellow-800 font-semibold px-4 py-2 rounded-full my-4 text-sm">
-                                Aguardando pagamento... O pagamento será confirmado automaticamente
+                                Aguardando pagamento...
                             </div>
 
                             <img 
@@ -193,15 +186,16 @@ const PaymentPage: React.FC = () => {
                                 {isCopied ? <><CheckCircle size={20} /> Copiado!</> : <><ClipboardCopy size={20} /> Copiar Código PIX</>}
                             </button>
 
-                            <div className="w-full bg-gray-50 border border-gray-200 rounded-lg p-4 mt-8 text-left">
-                                <h3 className="font-bold text-gray-800 mb-2">Como pagar:</h3>
-                                <ol className="list-decimal list-inside text-sm space-y-1 text-gray-600">
-                                    <li>Abra o aplicativo do seu banco</li>
-                                    <li>Acesse a opção PIX</li>
-                                    <li>Escaneie o QR Code ou cole o código PIX</li>
-                                    <li>Confirme o pagamento conforme valor indicado</li>
-                                </ol>
-                            </div>
+                            <div className="w-full border-t my-8"></div>
+
+                            <p className="text-gray-600 mb-4">Após realizar o pagamento, clique no botão abaixo para prosseguir.</p>
+                            <button 
+                                onClick={handleManualConfirmation}
+                                className="w-full bg-green-600 text-white py-3 rounded-lg font-bold text-lg hover:bg-green-700 transition-colors flex items-center justify-center gap-2"
+                            >
+                                Já paguei, continuar
+                                <ArrowRight size={20} />
+                            </button>
 
                             <p className="text-xs text-gray-400 mt-6">ID da Transação: {paymentData.transactionId}</p>
                         </div>
