@@ -20,47 +20,28 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(true); // Começa como true para o carregamento inicial
 
+  // Este efeito roda uma vez para pegar a sessão inicial e configurar o listener
   useEffect(() => {
-    setLoading(true);
-
-    const getSessionAndProfile = async (currentSession: Session | null) => {
-      setSession(currentSession);
-      const currentUser = currentSession?.user ?? null;
-      setUser(currentUser);
-      setProfile(null); // Reset profile before fetching
-
-      if (currentUser) {
-        try {
-          const { data: profileData, error } = await supabase
-            .from('profiles')
-            .select('role')
-            .eq('id', currentUser.id)
-            .single();
-
-          if (error) throw error;
-          setProfile(profileData);
-        } catch (error) {
-          console.error('Error fetching profile:', error);
-          setProfile(null);
-        }
-      }
-      
-      setLoading(false);
-    };
-
-    // Handle initial session load
     supabase.auth.getSession().then(({ data: { session } }) => {
-      getSessionAndProfile(session);
+      setSession(session);
+      setUser(session?.user ?? null);
+      // Se não houver sessão inicial, terminamos o carregamento.
+      // Se houver, o próximo efeito cuidará do carregamento do perfil.
+      if (!session) {
+        setLoading(false);
+      }
     });
 
-    // Listen for auth state changes
     const { data: authListener } = supabase.auth.onAuthStateChange(
-      async (_event, newSession) => {
-        // When auth state changes, we are in a "loading" state until the profile is resolved
-        setLoading(true);
-        await getSessionAndProfile(newSession);
+      (_event, session) => {
+        setSession(session);
+        setUser(session?.user ?? null);
+        // Se o usuário sair, não estamos carregando.
+        if (!session) {
+            setLoading(false);
+        }
       }
     );
 
@@ -69,9 +50,33 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     };
   }, []);
 
+  // Este efeito roda sempre que o usuário muda (após login, logout, ou carregamento inicial)
+  useEffect(() => {
+    // Se temos um usuário mas ainda não temos o perfil, buscamos ele.
+    if (user) {
+      setLoading(true); // Estamos carregando o perfil agora
+      supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', user.id)
+        .single()
+        .then(({ data, error }) => {
+          if (error) {
+            console.error('Error fetching profile:', error);
+            setProfile(null);
+          } else {
+            setProfile(data);
+          }
+          setLoading(false); // Terminamos de carregar o perfil
+        });
+    } else {
+      // Sem usuário, sem perfil.
+      setProfile(null);
+    }
+  }, [user]); // Dependência no `user`
+
   const signOut = async () => {
     await supabase.auth.signOut();
-    // The onAuthStateChange listener will handle state updates
   };
 
   const value = { session, user, profile, loading, signOut };
