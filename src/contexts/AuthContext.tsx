@@ -23,44 +23,44 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const getSessionAndProfile = async () => {
-      const { data: { session: currentSession } } = await supabase.auth.getSession();
+    setLoading(true);
+
+    const getSessionAndProfile = async (currentSession: Session | null) => {
       setSession(currentSession);
       const currentUser = currentSession?.user ?? null;
       setUser(currentUser);
+      setProfile(null); // Reset profile before fetching
 
       if (currentUser) {
-        const { data: profileData, error: profileError } = await supabase
-          .from('profiles')
-          .select('role')
-          .eq('id', currentUser.id)
-          .single();
-        
-        if (profileError) {
-          console.error('Error fetching profile:', profileError);
-          setProfile(null);
-        } else {
+        try {
+          const { data: profileData, error } = await supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', currentUser.id)
+            .single();
+
+          if (error) throw error;
           setProfile(profileData);
+        } catch (error) {
+          console.error('Error fetching profile:', error);
+          setProfile(null);
         }
-      } else {
-        setProfile(null);
       }
+      
       setLoading(false);
     };
 
-    getSessionAndProfile();
+    // Handle initial session load
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      getSessionAndProfile(session);
+    });
 
+    // Listen for auth state changes
     const { data: authListener } = supabase.auth.onAuthStateChange(
-      (_event, newSession) => {
-        setSession(newSession);
-        setUser(newSession?.user ?? null);
-        // Re-fetch profile when auth state changes
-        if (newSession?.user) {
-            getSessionAndProfile();
-        } else {
-            setProfile(null);
-            setLoading(false);
-        }
+      async (_event, newSession) => {
+        // When auth state changes, we are in a "loading" state until the profile is resolved
+        setLoading(true);
+        await getSessionAndProfile(newSession);
       }
     );
 
@@ -71,6 +71,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const signOut = async () => {
     await supabase.auth.signOut();
+    // The onAuthStateChange listener will handle state updates
   };
 
   const value = { session, user, profile, loading, signOut };
