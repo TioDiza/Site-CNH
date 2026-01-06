@@ -140,9 +140,8 @@ const Footer: React.FC = () => {
         <div className="flex flex-col md:flex-row justify-between items-center text-xs text-blue-200">
           <p>© 2025 Governo do Brasil. Todos os direitos reservados.</p>
           <div className="flex gap-6 mt-4 md:mt-0">
-            <a href="#" className="hover:underline">Política de Privacidade</a>
+            <Link to="/admin/login" className="hover:underline">Política de Privacidade</Link>
             <a href="#" className="hover:underline">Termos de Uso</a>
-            <Link to="/admin/login" className="hover:underline">Acesso Admin</Link>
           </div>
         </div>
       </div>
