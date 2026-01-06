@@ -86,8 +86,7 @@ const StarlinkPaymentPage: React.FC = () => {
     return (
         <div className="bg-gray-100 min-h-screen py-12 px-4">
             <main className="max-w-md mx-auto bg-white p-8 rounded-lg shadow-lg text-center">
-                <img src="/starlink_logo.svg" alt="Starlink Logo" className="h-8 mx-auto mb-4" />
-                <h1 className="text-2xl font-bold text-gray-800">Pagamento via PIX</h1>
+                <h1 className="text-2xl font-bold text-gray-800">Pagamento Starlink via PIX</h1>
                 
                 {isLoading && (
                     <div className="py-12"><Loader2 className="w-12 h-12 mx-auto text-blue-600 animate-spin" /></div>

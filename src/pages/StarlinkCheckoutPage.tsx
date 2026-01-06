@@ -46,7 +46,7 @@ const StarlinkCheckoutPage: React.FC = () => {
             if (!data.erro) {
                 setFormData(prev => ({
                     ...prev,
-                    street: data.logradouro,
+                    street: data.logouro,
                     neighborhood: data.bairro,
                     city: data.localidade,
                     state: data.uf,
@@ -98,9 +98,8 @@ const StarlinkCheckoutPage: React.FC = () => {
         <div className="bg-gray-100 min-h-screen py-12 px-4">
             <main className="max-w-2xl mx-auto bg-white p-8 rounded-lg shadow-lg">
                 <div className="text-center mb-8">
-                    <img src="/starlink_logo.svg" alt="Starlink Logo" className="h-8 mx-auto" />
-                    <h1 className="text-3xl font-bold text-gray-800 mt-4">Finalize sua Compra</h1>
-                    <p className="text-gray-600">Preencha seus dados para entrega da antena Starlink.</p>
+                    <h1 className="text-3xl font-bold text-gray-800 mt-4">Finalize sua Compra Starlink</h1>
+                    <p className="text-gray-600">Preencha seus dados para entrega da antena.</p>
                 </div>
 
                 <form onSubmit={handleSubmit} className="space-y-6">

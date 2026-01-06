@@ -78,9 +78,20 @@ const AdminDashboardPage: React.FC = () => {
             if (cnhError) throw cnhError;
             
             const typedCnhTransactions = cnhData as Transaction[];
-            setCnhTransactions(typedCnhTransactions);
+            
+            const paidLeads = new Map<string, Transaction>();
+            typedCnhTransactions.forEach(t => {
+                if (t.leads && !paidLeads.has(t.leads.id)) {
+                    paidLeads.set(t.leads.id, t);
+                }
+            });
+            const uniquePaidLeadTransactions = Array.from(paidLeads.values());
+            const paidLeadsCount = paidLeads.size;
+
             const cnhRevenue = typedCnhTransactions.reduce((sum, t) => sum + (t.amount || 0), 0);
-            setCnhStats({ totalLeads: totalLeadsCount || 0, totalRevenue: cnhRevenue, paidTransactions: typedCnhTransactions.length });
+            
+            setCnhTransactions(uniquePaidLeadTransactions);
+            setCnhStats({ totalLeads: totalLeadsCount || 0, totalRevenue: cnhRevenue, paidTransactions: paidLeadsCount });
 
             // Fetch Starlink Data
             const { data: starlinkData, error: starlinkError } = await supabase.from('starlink_customers').select('*, transactions(status, created_at)').order('created_at', { ascending: false });
