@@ -18,15 +18,15 @@ serve(async (req) => {
 
   try {
     const payload = await req.json();
-    console.log('Webhook received:', payload);
+    console.log('[payment-webhook] Webhook received:', payload);
 
     const transactionId = payload.idTransaction || payload.externalReference;
     const status = payload.status;
     let dbStatus = '';
 
     if (!transactionId || !status) {
-        console.warn('Webhook received without transactionId or status');
-        return new Response(JSON.stringify({ status: "received, but malformed" }), {
+        console.warn('[payment-webhook] Webhook received without transactionId or status');
+        return new Response(JSON.stringify(200), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           status: 200,
         });
@@ -49,8 +49,8 @@ serve(async (req) => {
          dbStatus = 'canceled';
          break;
       default:
-        console.warn(`Received unknown webhook status: ${status}`);
-        return new Response(JSON.stringify({ status: "received, unknown status" }), {
+        console.warn(`[payment-webhook] Received unknown webhook status: ${status}`);
+        return new Response(JSON.stringify(200), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           status: 200,
         });
@@ -62,18 +62,19 @@ serve(async (req) => {
       .eq('gateway_transaction_id', transactionId);
 
     if (error) {
-      console.error(`Failed to update transaction ${transactionId} to status ${dbStatus}:`, error);
+      console.error(`[payment-webhook] Failed to update transaction ${transactionId} to status ${dbStatus}:`, error);
     } else {
-      console.log(`Successfully updated transaction ${transactionId} to status ${dbStatus}`);
+      console.log(`[payment-webhook] Successfully updated transaction ${transactionId} to status ${dbStatus}`);
     }
 
-    return new Response(JSON.stringify({ status: "received" }), {
+    // Respond exactly as the documentation requires to prevent retries.
+    return new Response(JSON.stringify(200), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200,
     });
 
   } catch (error) {
-    console.error('Error processing webhook:', error);
+    console.error('[payment-webhook] Error processing webhook:', error);
     return new Response(JSON.stringify({ error: 'Failed to process webhook' }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 500,
