@@ -21,33 +21,39 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(true); // Start loading initially
 
   useEffect(() => {
     const { data: authListener } = supabase.auth.onAuthStateChange(async (event, currentSession) => {
-      setSession(currentSession);
-      setUser(currentSession?.user ?? null);
+      // For major auth events that require fetching data, set loading to true
+      if (event === 'SIGNED_IN') {
+        setLoading(true);
+      }
 
-      if (currentSession?.user) {
+      setSession(currentSession);
+      const currentUser = currentSession?.user ?? null;
+      setUser(currentUser);
+      
+      // Always reset profile before fetching
+      setProfile(null);
+
+      if (currentUser) {
         const { data: profileData, error } = await supabase
           .from('profiles')
           .select('role')
-          .eq('id', currentSession.user.id)
+          .eq('id', currentUser.id)
           .single();
 
         if (error) {
           console.error('Error fetching profile on auth change:', error);
-          setProfile(null);
         } else {
           setProfile(profileData);
         }
-      } else {
-        setProfile(null);
       }
       
-      // O estado de 'loading' deve ser gerenciado apenas para o carregamento inicial da sessão.
-      // Após o primeiro evento, as atualizações de sessão acontecem em segundo plano.
-      if (event === 'INITIAL_SESSION') {
+      // We are done loading after the initial session is processed or after a sign-in/out event.
+      // This prevents the loader from showing on token refreshes.
+      if (event === 'INITIAL_SESSION' || event === 'SIGNED_IN' || event === 'SIGNED_OUT') {
         setLoading(false);
       }
     });
@@ -58,7 +64,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   }, []);
 
   const signOut = async () => {
+    setLoading(true);
     await supabase.auth.signOut();
+    // onAuthStateChange will handle setting loading to false
   };
 
   const value = {
