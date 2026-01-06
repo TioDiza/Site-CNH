@@ -78,17 +78,17 @@ const StarlinkCheckoutPage: React.FC = () => {
             }
         };
 
-        const { data, error: insertError } = await supabase
+        const { data, error: upsertError } = await supabase
             .from('starlink_customers')
-            .insert(customerData)
+            .upsert(customerData, { onConflict: 'cpf' })
             .select()
             .single();
 
         setIsLoading(false);
 
-        if (insertError) {
-            console.error("Erro ao salvar cliente:", insertError);
-            setError("Não foi possível salvar seu cadastro. Verifique se o CPF já não foi utilizado.");
+        if (upsertError) {
+            console.error("Erro ao salvar cliente:", upsertError);
+            setError("Ocorreu um erro ao salvar seu cadastro. Por favor, tente novamente.");
         } else {
             navigate('/starlink-payment', { state: { customerData: data } });
         }
