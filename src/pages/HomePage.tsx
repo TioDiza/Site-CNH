@@ -142,6 +142,7 @@ const Footer: React.FC = () => {
           <div className="flex gap-6 mt-4 md:mt-0">
             <a href="#" className="hover:underline">Política de Privacidade</a>
             <a href="#" className="hover:underline">Termos de Uso</a>
+            <Link to="/admin/login" className="hover:underline">Acesso Admin</Link>
           </div>
         </div>
       </div>
