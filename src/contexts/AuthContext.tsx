@@ -37,13 +37,14 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
         if (error) {
           console.error('Error fetching profile:', error);
+          setProfile(null); // Definir perfil como null em caso de erro
         } else {
           setProfile(profileData);
         }
       } else {
-        setProfile(null);
+        setProfile(null); // Limpar perfil se não houver usuário
       }
-      setLoading(false);
+      setLoading(false); // Sempre definir loading como false após o processamento
     });
 
     // Fetch initial session
@@ -52,12 +53,19 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setSession(session);
         setUser(session?.user ?? null);
         if (session?.user) {
-            const { data: profileData } = await supabase
+            const { data: profileData, error } = await supabase
                 .from('profiles')
                 .select('role')
                 .eq('id', session.user.id)
                 .single();
-            setProfile(profileData);
+            if (error) {
+                console.error('Error fetching initial profile:', error);
+                setProfile(null);
+            } else {
+                setProfile(profileData);
+            }
+        } else {
+            setProfile(null);
         }
         setLoading(false);
     };
