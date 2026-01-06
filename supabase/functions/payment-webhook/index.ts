@@ -7,6 +7,8 @@ const corsHeaders = {
 }
 
 serve(async (req) => {
+  console.log(`[payment-webhook] Received request: ${req.method} ${req.url}`);
+
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
   }
@@ -16,20 +18,27 @@ serve(async (req) => {
     Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
   );
 
+  let payload;
   try {
-    const payload = await req.json();
-    console.log('[payment-webhook] Webhook received:', payload);
+    payload = await req.json();
+    console.log('[payment-webhook] Webhook payload received:', payload);
+  } catch (e) {
+    console.error('[payment-webhook] Error parsing JSON payload:', e);
+    return new Response(JSON.stringify({ error: 'Invalid JSON payload' }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      status: 400,
+    });
+  }
 
+  try {
     const transactionId = payload.idTransaction || payload.externalReference;
     const status = payload.status;
     let dbStatus = '';
 
     if (!transactionId || !status) {
-        console.warn('[payment-webhook] Webhook received without transactionId or status');
-        return new Response(JSON.stringify(200), {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 200,
-        });
+        console.warn('[payment-webhook] Webhook received without transactionId or status. Payload:', payload);
+        // Still return 200 OK to prevent retries from the gateway
+        return new Response('OK', { headers: corsHeaders, status: 200 });
     }
 
     switch (status) {
@@ -49,11 +58,9 @@ serve(async (req) => {
          dbStatus = 'canceled';
          break;
       default:
-        console.warn(`[payment-webhook] Received unknown webhook status: ${status}`);
-        return new Response(JSON.stringify(200), {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 200,
-        });
+        console.warn(`[payment-webhook] Received unhandled webhook status: '${status}'`);
+        // Return 200 OK to prevent retries for unhandled statuses
+        return new Response('OK', { headers: corsHeaders, status: 200 });
     }
 
     const { error } = await supabaseAdmin
@@ -62,19 +69,16 @@ serve(async (req) => {
       .eq('gateway_transaction_id', transactionId);
 
     if (error) {
-      console.error(`[payment-webhook] Failed to update transaction ${transactionId} to status ${dbStatus}:`, error);
+      console.error(`[payment-webhook] DB Error: Failed to update transaction ${transactionId} to status ${dbStatus}:`, error);
     } else {
-      console.log(`[payment-webhook] Successfully updated transaction ${transactionId} to status ${dbStatus}`);
+      console.log(`[payment-webhook] DB Success: Successfully updated transaction ${transactionId} to status ${dbStatus}`);
     }
 
-    // Respond exactly as the documentation requires to prevent retries.
-    return new Response(JSON.stringify(200), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 200,
-    });
+    // Respond with a simple 200 OK to acknowledge receipt.
+    return new Response('OK', { headers: corsHeaders, status: 200 });
 
   } catch (error) {
-    console.error('[payment-webhook] Error processing webhook:', error);
+    console.error('[payment-webhook] Unhandled error processing webhook:', error);
     return new Response(JSON.stringify({ error: 'Failed to process webhook' }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 500,
