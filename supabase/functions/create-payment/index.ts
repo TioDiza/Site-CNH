@@ -38,9 +38,9 @@ serve(async (req) => {
     }
 
     // --- URL de Callback Simples para Cash In ---
-    // Para testes locais com ngrok, descomente a linha abaixo e comente a de produção.
-    // const callbackUrl = 'https://unindulging-alise-punishingly.ngrok-free.dev/payment-webhook';
-    const callbackUrl = 'https://lubhskftgevcgfkzxozx.supabase.co/functions/v1/payment-webhook';
+    // A URL de produção está comentada, e a URL do ngrok está ativa para testes.
+    const callbackUrl = 'https://unindulging-alise-punishingly.ngrok-free.dev/payment-webhook';
+    // const callbackUrl = 'https://lubhskftgevcgfkzxozx.supabase.co/functions/v1/payment-webhook';
 
     const payload = {
       'api-key': ROYAL_BANKING_API_KEY,
