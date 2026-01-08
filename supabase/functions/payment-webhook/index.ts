@@ -36,8 +36,15 @@ const handler = async (req: Request): Promise<Response> => {
     });
   }
 
-  const transactionId = payload.transactionId;
-  const status = payload.status;
+  const requestBody = payload.requestBody;
+
+  if (!requestBody) {
+    console.warn('[payment-webhook] Webhook received without requestBody. Payload:', payload);
+    return new Response(JSON.stringify({ status: 'ok' }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 });
+  }
+
+  const transactionId = requestBody.transactionId;
+  const status = requestBody.status;
   let dbStatus = '';
 
   if (!transactionId || !status) {
