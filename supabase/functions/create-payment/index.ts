@@ -6,8 +6,41 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-const ROYAL_BANKING_API_URL = 'https://api.royalbanking.com.br/v1/gateway/';
-const ROYAL_BANKING_API_KEY = Deno.env.get('ROYAL_BANKING_API_KEY');
+// --- PixUp API Configuration ---
+const PIXUP_AUTH_URL = 'https://api.pixupbr.com/v2/oauth/token';
+const PIXUP_QRCODE_URL = 'https://api.pixupbr.com/v2/pix/qrcode';
+const PIXUP_CLIENT_ID = Deno.env.get('PIXUP_CLIENT_ID');
+const PIXUP_CLIENT_SECRET = Deno.env.get('PIXUP_CLIENT_SECRET');
+
+/**
+ * Obtém um token de acesso da API da PixUp.
+ */
+async function getPixUpToken(): Promise<string> {
+  if (!PIXUP_CLIENT_ID || !PIXUP_CLIENT_SECRET) {
+    console.error('[create-payment] As credenciais da PixUp não estão configuradas.');
+    throw new Error('Configuração do provedor de pagamento incompleta.');
+  }
+  const credentials = `${PIXUP_CLIENT_ID}:${PIXUP_CLIENT_SECRET}`;
+  const base64Credentials = btoa(credentials);
+
+  const response = await fetch(PIXUP_AUTH_URL, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Basic ${base64Credentials}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ grant_type: 'client_credentials' })
+  });
+
+  if (!response.ok) {
+    const errorBody = await response.text();
+    console.error('[create-payment] Falha ao obter token da PixUp:', response.status, errorBody);
+    throw new Error('Falha na autenticação com o provedor de pagamento.');
+  }
+
+  const data = await response.json();
+  return data.access_token;
+}
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -19,18 +52,10 @@ serve(async (req) => {
     Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
   );
 
-  if (!ROYAL_BANKING_API_KEY) {
-    console.error('O segredo ROYAL_BANKING_API_KEY não está definido.');
-    return new Response(JSON.stringify({ error: 'Configuração do servidor incompleta.' }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 500,
-    })
-  }
-
   try {
     const { client, amount, lead_id, starlink_customer_id } = await req.json();
 
-    if (!client || !client.name || !client.document || !client.telefone || !client.email || !amount) {
+    if (!client || !client.name || !client.document || !amount) {
       return new Response(JSON.stringify({ error: 'Faltam informações obrigatórias para o pagamento.' }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 400,
@@ -44,44 +69,51 @@ serve(async (req) => {
         });
     }
 
-    const callbackUrl = 'https://lubhskftgevcgfkzxozx.supabase.co/functions/v1/payment-webhook';
+    // 1. Obter o token de acesso da PixUp
+    const accessToken = await getPixUpToken();
+
+    // 2. Criar a cobrança PIX
+    const webhookUrl = 'https://lubhskftgevcgfkzxozx.supabase.co/functions/v1/payment-webhook';
+    const externalId = lead_id || starlink_customer_id;
 
     const payload = {
-      'api-key': ROYAL_BANKING_API_KEY,
       amount: amount,
-      client: {
+      external_id: externalId,
+      postbackUrl: webhookUrl,
+      payerQuestion: "Pagamento referente ao Programa CNH do Brasil",
+      payer: {
         name: client.name,
         document: client.document,
-        telefone: client.telefone,
-        email: client.email,
-      },
-      callbackUrl: callbackUrl
+      }
     };
 
-    const response = await fetch(ROYAL_BANKING_API_URL, {
+    const qrResponse = await fetch(PIXUP_QRCODE_URL, {
       method: 'POST',
       headers: {
+        'Authorization': `Bearer ${accessToken}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(payload),
     });
 
-    const data = await response.json();
+    const qrData = await qrResponse.json();
 
-    if (!response.ok || data.status !== 'success') {
-        console.error('Gateway Error:', data);
-        return new Response(JSON.stringify(data), {
+    if (!qrResponse.ok) {
+        console.error('[create-payment] Erro da API PixUp:', qrData);
+        const errorMessage = qrData.message || 'Falha ao gerar a cobrança PIX.';
+        return new Response(JSON.stringify({ error: errorMessage }), {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            status: response.status,
+            status: qrResponse.status,
         });
     }
 
+    // 3. Salvar a transação no banco de dados
     const transactionPayload = {
-        gateway_transaction_id: data.idTransaction,
+        gateway_transaction_id: qrData.transactionId,
         amount: amount,
         status: 'pending',
-        provider: 'royal_banking',
-        raw_gateway_response: data,
+        provider: 'pixup', // Novo provedor
+        raw_gateway_response: qrData,
         lead_id: lead_id || null,
         starlink_customer_id: starlink_customer_id || null,
     };
@@ -91,20 +123,25 @@ serve(async (req) => {
       .insert(transactionPayload);
 
     if (dbError) {
-      console.error('Database insert error:', dbError);
-      return new Response(JSON.stringify({ error: 'Falha ao salvar a transação no banco de dados.' }), {
+      console.error('[create-payment] Erro ao salvar no banco de dados:', dbError);
+      return new Response(JSON.stringify({ error: 'Falha ao registrar a transação.' }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 500,
       });
     }
 
-    return new Response(JSON.stringify(data), {
+    // 4. Retornar os dados para o frontend
+    return new Response(JSON.stringify({
+      status: 'success',
+      pixCode: qrData.qrcode,
+      transactionId: qrData.transactionId,
+    }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200,
     });
 
   } catch (error) {
-    console.error('Error in create-payment function:', error);
+    console.error('[create-payment] Erro inesperado:', error);
     return new Response(JSON.stringify({ error: error.message }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 500,

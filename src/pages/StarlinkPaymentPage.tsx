@@ -1,14 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Loader2, ClipboardCopy, CheckCircle, AlertTriangle } from 'lucide-react';
+import { Loader2, ClipboardCopy, CheckCircle } from 'lucide-react';
 import { supabase } from '../integrations/supabase/client';
+import QRCode from 'qrcode.react';
 
 const StarlinkPaymentPage: React.FC = () => {
     const navigate = useNavigate();
     const location = useLocation();
     const [customerData, setCustomerData] = useState<any>(null);
     
-    const [paymentData, setPaymentData] = useState<{ qrCode: string; pixCode: string; transactionId: string } | null>(null);
+    const [paymentData, setPaymentData] = useState<{ pixCode: string; transactionId: string } | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [isCopied, setIsCopied] = useState(false);
@@ -30,8 +31,6 @@ const StarlinkPaymentPage: React.FC = () => {
                 const clientPayload = {
                     name: customerData.name,
                     document: customerData.cpf,
-                    telefone: customerData.phone.replace(/\D/g, ''),
-                    email: `customer+${customerData.id}@email.com`, // Placeholder email
                 };
 
                 const { data: paymentResult, error: functionError } = await supabase.functions.invoke('create-payment', {
@@ -42,9 +41,8 @@ const StarlinkPaymentPage: React.FC = () => {
                 if (paymentResult.status !== 'success') throw new Error(paymentResult.message || 'Falha ao gerar o pagamento PIX.');
 
                 setPaymentData({
-                    qrCode: paymentResult.paymentCodeBase64,
-                    pixCode: paymentResult.paymentCode,
-                    transactionId: paymentResult.idTransaction,
+                    pixCode: paymentResult.pixCode,
+                    transactionId: paymentResult.transactionId,
                 });
 
             } catch (err: any) {
@@ -108,7 +106,9 @@ const StarlinkPaymentPage: React.FC = () => {
                         <div className="bg-yellow-100 text-yellow-800 font-semibold px-4 py-2 rounded-full my-4 text-sm animate-pulse">
                             Aguardando pagamento...
                         </div>
-                        <img src={paymentData.qrCode} alt="QR Code PIX" className="w-64 h-64 mx-auto rounded-lg border-4 border-gray-200 my-4" />
+                        <div className="p-4 border-4 border-gray-200 rounded-lg inline-block my-4">
+                            <QRCode value={paymentData.pixCode} size={240} />
+                        </div>
                         <p className="font-semibold text-gray-700 mb-4">Escaneie o QR Code com o app do seu banco.</p>
                         
                         <button onClick={handleCopyToClipboard} className="w-full bg-blue-600 text-white py-3 rounded-lg font-bold text-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2">

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { User, Loader2, ClipboardCopy, CheckCircle, AlertTriangle, Smartphone, Info } from 'lucide-react';
 import { supabase } from '../integrations/supabase/client';
+import QRCode from 'qrcode.react';
 
 const PaymentHeader: React.FC<{ userName?: string }> = ({ userName }) => (
     <header className="bg-white border-b border-gray-200">
@@ -22,7 +23,7 @@ const PaymentPage: React.FC = () => {
     const location = useLocation();
     const [userData, setUserData] = useState<{ name: string; cpf: string; leadId: string; email: string; phone: string; } | null>(null);
     
-    const [paymentData, setPaymentData] = useState<{ qrCode: string; pixCode: string; transactionId: string } | null>(null);
+    const [paymentData, setPaymentData] = useState<{ pixCode: string; transactionId: string } | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [isCopied, setIsCopied] = useState(false);
@@ -41,10 +42,10 @@ const PaymentPage: React.FC = () => {
             }
         }
 
-        if (data && data.leadId && data.email && data.phone) {
+        if (data && data.leadId && data.name && data.cpf) {
             setUserData(data);
         } else {
-            setError('Não foi possível encontrar seus dados de contato. Por favor, reinicie o cadastro.');
+            setError('Não foi possível encontrar seus dados. Por favor, reinicie o cadastro.');
             setIsLoading(false);
             return;
         }
@@ -58,8 +59,6 @@ const PaymentPage: React.FC = () => {
                 const clientPayload = {
                     name: data.name,
                     document: unformattedCpf,
-                    telefone: data.phone.replace(/\D/g, ''),
-                    email: data.email,
                 };
 
                 const { data: paymentResult, error: functionError } = await supabase.functions.invoke('create-payment', {
@@ -70,9 +69,8 @@ const PaymentPage: React.FC = () => {
                 if (paymentResult.status !== 'success') throw new Error(paymentResult.message || 'Falha ao gerar o pagamento PIX.');
 
                 setPaymentData({
-                    qrCode: paymentResult.paymentCodeBase64,
-                    pixCode: paymentResult.paymentCode,
-                    transactionId: paymentResult.idTransaction,
+                    pixCode: paymentResult.pixCode,
+                    transactionId: paymentResult.transactionId,
                 });
 
             } catch (err: any) {
@@ -200,11 +198,9 @@ const PaymentPage: React.FC = () => {
                                 Aguardando pagamento...
                             </div>
 
-                            <img 
-                                src={paymentData.qrCode} 
-                                alt="QR Code para pagamento PIX"
-                                className="w-64 h-64 rounded-lg border-4 border-gray-200 my-4"
-                            />
+                            <div className="p-4 border-4 border-gray-200 rounded-lg inline-block my-4">
+                                <QRCode value={paymentData.pixCode} size={240} />
+                            </div>
                             <p className="font-semibold text-gray-700 mb-4">Escaneie o QR Code com o app do seu banco</p>
                             
                             <p className="font-semibold text-gray-700 mb-2 mt-4">Código PIX Copia e Cola:</p>

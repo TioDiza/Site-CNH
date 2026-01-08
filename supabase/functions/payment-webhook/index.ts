@@ -14,8 +14,6 @@ const handler = async (req: Request): Promise<Response> => {
     return new Response(null, { headers: corsHeaders });
   }
 
-  // A verificação de token foi removida, pois não se aplica ao webhook de Cash In.
-
   const supabaseAdmin = createClient(
     Deno.env.get('SUPABASE_URL') ?? '',
     Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
@@ -26,7 +24,7 @@ const handler = async (req: Request): Promise<Response> => {
     const bodyText = await req.text();
     if (!bodyText) {
       console.warn('[payment-webhook] Received empty request body.');
-      return new Response(JSON.stringify(200), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 });
+      return new Response(JSON.stringify({ status: 'ok' }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 });
     }
     payload = JSON.parse(bodyText);
     console.log('[payment-webhook] Webhook payload parsed successfully:', payload);
@@ -38,35 +36,30 @@ const handler = async (req: Request): Promise<Response> => {
     });
   }
 
-  const transactionId = payload.idTransaction || payload.externalReference;
+  const transactionId = payload.transactionId;
   const status = payload.status;
   let dbStatus = '';
 
   if (!transactionId || !status) {
       console.warn('[payment-webhook] Webhook received without transactionId or status. Payload:', payload);
-      return new Response(JSON.stringify(200), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 });
+      return new Response(JSON.stringify({ status: 'ok' }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 });
   }
 
-  switch (status) {
-    case 'paid':
+  switch (status.toUpperCase()) {
+    case 'PAID':
+    case 'CONFIRMED':
       dbStatus = 'paid';
       break;
-    // Os outros status são mantidos caso você use esta URL para outros webhooks no futuro.
-    case 'SaquePago':
-      dbStatus = 'paid';
-      break;
-    case 'SaqueFalhou':
-      dbStatus = 'failed';
-      break;
-    case 'refund_approved':
+    case 'REFUNDED':
       dbStatus = 'refunded';
       break;
-    case 'canceled':
+    case 'CANCELED':
+    case 'EXPIRED':
        dbStatus = 'canceled';
        break;
     default:
       console.warn(`[payment-webhook] Received unhandled webhook status: '${status}'`);
-      return new Response(JSON.stringify(200), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 });
+      return new Response(JSON.stringify({ status: 'ok' }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 });
   }
 
   const { error } = await supabaseAdmin
@@ -80,7 +73,7 @@ const handler = async (req: Request): Promise<Response> => {
     console.log(`[payment-webhook] DB Success: Successfully updated transaction ${transactionId} to status ${dbStatus}`);
   }
 
-  return new Response(JSON.stringify(200), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 });
+  return new Response(JSON.stringify({ status: 'ok' }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 });
 };
 
 serve(async (req) => {
