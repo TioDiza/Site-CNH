@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { User, Loader2, ClipboardCopy, CheckCircle, AlertTriangle, Smartphone, Info } from 'lucide-react';
 import { supabase } from '../integrations/supabase/client';
-import QRCode from 'qrcode.react';
+import { QRCodeSVG } from 'qrcode.react';
 
 const PaymentHeader: React.FC<{ userName?: string }> = ({ userName }) => (
     <header className="bg-white border-b border-gray-200">
@@ -199,7 +199,7 @@ const PaymentPage: React.FC = () => {
                             </div>
 
                             <div className="p-4 border-4 border-gray-200 rounded-lg inline-block my-4">
-                                <QRCode value={paymentData.pixCode} size={240} />
+                                <QRCodeSVG value={paymentData.pixCode} size={240} />
                             </div>
                             <p className="font-semibold text-gray-700 mb-4">Escaneie o QR Code com o app do seu banco</p>
                             
